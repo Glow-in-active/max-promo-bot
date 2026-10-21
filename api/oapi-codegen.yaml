@@ -1,0 +1,11 @@
+package: generated
+generate:
+  models: true
+  std-http-server: true
+  embedded-spec: true
+output-options:
+  name-normalizer: ToCamelCaseWithInitialisms
+  skip-prune: true
+  resolve-type-name-collisions: true
+  prefer-skip-optional-pointer: true
+  prefer-skip-optional-pointer-with-omitzero: true

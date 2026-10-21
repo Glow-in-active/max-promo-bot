@@ -1,0 +1,1132 @@
+---
+openapi: 3.1.0
+info:
+  title: Promotion service
+  version: 1.0.0
+  description: |
+    MAX webhook, protected administration and isolated test campaigns.
+    User actions enter through authentic MAX updates in every mode.
+    A successful webhook response acknowledges durable acceptance or an ignored update.
+    Business replies and expected business errors are delivered asynchronously.
+servers:
+- url: http://localhost:8080
+tags:
+- name: Health
+- name: MAX
+- name: Administration
+- name: Demo
+paths:
+  "/healthz":
+    get:
+      tags:
+      - Health
+      operationId: liveness
+      responses:
+        '200':
+          description: Process is alive
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HealthStatus"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+  "/readyz":
+    get:
+      tags:
+      - Health
+      operationId: readiness
+      responses:
+        '200':
+          description: Database is reachable
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HealthStatus"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+  "/assets/banner.svg":
+    get:
+      tags:
+      - Health
+      operationId: demoBanner
+      description: Local preview banner. Real MAX messages use a configured public
+        HTTPS PNG or JPEG URL.
+      responses:
+        '200':
+          description: Embedded demo banner.
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+  "/webhooks/max":
+    post:
+      tags:
+      - MAX
+      operationId: acceptMAXUpdate
+      description: |
+        Production uses CAMPAIGN_ID. Demo and simulator modes read X-Demo-Campaign.
+        Bot and group messages are ignored. Supported events are bot_started,
+        message_created and message_callback. Unknown platform fields are accepted.
+        Messages without text, empty captions and forwarded messages with null body
+        are acknowledged as ignored without inbox work. Nonempty captions are processed as text.
+        Stable message IDs provide inbox deduplication per campaign. Callback identity
+        includes timestamp, user, callback ID and payload; exact redeliveries are deduplicated.
+        Daily promo/check/participate actions are bound to timestamp. A replay after a day change never selects the new partner.
+      security:
+      - WebhookSecret: []
+      parameters:
+      - in: header
+        name: X-Demo-Campaign
+        required: false
+        description: Test campaign identifier for demo and simulator modes. Ignored in production.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/MAXUpdate"
+            example:
+              update_type: message_callback
+              timestamp: 1792584000000
+              message:
+                recipient:
+                  chat_type: dialog
+              callback:
+                callback_id: unique-platform-callback-id
+                user:
+                  user_id: 42
+                  is_bot: false
+                payload: promo
+      responses:
+        '200':
+          description: Durably accepted, duplicate acknowledged, or irrelevant update
+            ignored.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/WebhookAck"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '413':
+          "$ref": "#/components/responses/Error"
+        '415':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/campaigns/{campaign}/draws":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    get:
+      tags:
+      - Administration
+      operationId: listDraws
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Draws and their saved candidate snapshots and results.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DrawList"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/campaigns/{campaign}/draws/{draw}/run":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    - "$ref": "#/components/parameters/Draw"
+    post:
+      tags:
+      - Administration
+      operationId: runDraw
+      description: Persist one result after registration closes. Repeated execution
+        returns the saved result.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          "$ref": "#/components/responses/Draw"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/campaigns/{campaign}/draws/{draw}/approve":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    - "$ref": "#/components/parameters/Draw"
+    post:
+      tags:
+      - Administration
+      operationId: approveDraw
+      description: Approve the saved result and enqueue prize offers atomically.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          "$ref": "#/components/responses/Draw"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/campaigns/{campaign}/stats":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    get:
+      tags:
+      - Administration
+      operationId: campaignStats
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Campaign statistics.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Stats"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/campaigns/{campaign}/export.csv":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    get:
+      tags:
+      - Administration
+      operationId: exportDrawResults
+      description: Participant snapshot, saved selection and current offers with weights,
+        ranks, delivery states and timestamps. Formula prefixes are escaped.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: UTF-8 CSV. Header is returned even if no results exist.
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/campaigns/{campaign}/draws/{draw}/offers":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    - "$ref": "#/components/parameters/Draw"
+    get:
+      tags:
+      - Administration
+      operationId: listDrawOffers
+      description: Inspect all original and reserve offers, delivery states and claim
+        deadlines.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Restricted prize offers.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/OfferList"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/offers/{offer}/retry":
+    parameters:
+    - "$ref": "#/components/parameters/Offer"
+    post:
+      tags:
+      - Administration
+      operationId: retryOfferDelivery
+      description: Audited operator decision to retry an unresolved delivery after
+        checking MAX. A retry can duplicate a message if an earlier request reached
+        MAX.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Delivery queued for another attempt
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ActionStatus"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/offers/{offer}":
+    parameters:
+    - "$ref": "#/components/parameters/Offer"
+    get:
+      tags:
+      - Administration
+      operationId: inspectOffer
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Restricted offer details, including supplied name and consent
+            timestamp.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Offer"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/offers/{offer}/expire":
+    parameters:
+    - "$ref": "#/components/parameters/Offer"
+    post:
+      tags:
+      - Administration
+      operationId: expireOffer
+      description: Process an offer whose confirmed delivery deadline has passed.
+        Normal operation uses the worker.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Expiration processed or no expiration necessary
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ActionStatus"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/offers/{offer}/delivered":
+    parameters:
+    - "$ref": "#/components/parameters/Offer"
+    post:
+      tags:
+      - Administration
+      operationId: confirmDelivery
+      description: Operator recovery after checking an ambiguous MAX delivery. Starts
+        the claim deadline.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Delivery recorded
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ActionStatus"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+  "/api/admin/tick":
+    post:
+      tags:
+      - Administration
+      operationId: processDueWork
+      description: Run scheduled draw and expiration processing once. Workers also
+        call this automatically.
+      security:
+      - AdminBearer: []
+      responses:
+        '200':
+          description: Processing completed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ActionStatus"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/_demo/runs":
+    post:
+      tags:
+      - Demo
+      operationId: createDemoRun
+      description: |
+        Available in MODE=demo and MODE=simulator. Each call creates a fresh campaign without
+        clearing other data. standard has an active day; exhausted has no codes;
+        drawable has a closed daily draw; final has a closed weighted final;
+        expired has an approved overdue offer and reserves.
+      security:
+      - DemoBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - scenario
+              properties:
+                scenario:
+                  type: string
+                  enum:
+                  - standard
+                  - exhausted
+                  - drawable
+                  - final
+                  - expired
+      responses:
+        '201':
+          description: Isolated seeded campaign identifiers and users.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/DemoRun"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          description: Route does not exist in production
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '413':
+          "$ref": "#/components/responses/Error"
+        '415':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/_demo/runs/{campaign}/messages":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    get:
+      tags:
+      - Demo
+      operationId: demoMessages
+      description: Available in MODE=demo and MODE=simulator. Inspect durable outgoing
+        messages. Poll until the expected message is present; delivery is asynchronous.
+      security:
+      - DemoBearer: []
+      parameters:
+      - in: query
+        name: after
+        description: Optional last message ID from a previous response.
+        schema:
+          type: string
+          maxLength: 200
+      responses:
+        '200':
+          description: Outbox messages in creation order.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MessageList"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+  "/_demo/runs/{campaign}/subscription":
+    parameters:
+    - "$ref": "#/components/parameters/Campaign"
+    post:
+      tags:
+      - Demo
+      operationId: setDemoSubscription
+      description: Available only in MODE=demo. Set subscription status for this
+        campaign's active partner channel and one user. Default is yes.
+      security:
+      - DemoBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - user_id
+              - status
+              properties:
+                user_id:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                status:
+                  type: string
+                  enum:
+                  - 'yes'
+                  - 'no'
+                  - error
+      responses:
+        '200':
+          description: Override applied
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ActionStatus"
+        '400':
+          "$ref": "#/components/responses/Error"
+        '401':
+          "$ref": "#/components/responses/Error"
+        '404':
+          "$ref": "#/components/responses/Error"
+        '500':
+          "$ref": "#/components/responses/Error"
+        '503':
+          "$ref": "#/components/responses/Error"
+        '413':
+          "$ref": "#/components/responses/Error"
+        '415':
+          "$ref": "#/components/responses/Error"
+        '403':
+          "$ref": "#/components/responses/Error"
+        '409':
+          "$ref": "#/components/responses/Error"
+components:
+  securitySchemes:
+    AdminBearer:
+      type: http
+      scheme: bearer
+      description: ADMIN_TOKEN
+    DemoBearer:
+      type: http
+      scheme: bearer
+      description: DEMO_TOKEN
+    WebhookSecret:
+      type: apiKey
+      in: header
+      name: X-Max-Bot-Api-Secret
+  parameters:
+    Campaign:
+      in: path
+      name: campaign
+      required: true
+      schema:
+        type: string
+    Draw:
+      in: path
+      name: draw
+      required: true
+      schema:
+        type: string
+    Offer:
+      in: path
+      name: offer
+      required: true
+      schema:
+        type: string
+  responses:
+    Error:
+      description: Stable error code and safe message. Unexpected errors never expose
+        SQL or tokens.
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - error
+            properties:
+              error:
+                type: object
+                required:
+                - code
+                - message
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+    Draw:
+      description: Persisted draw.
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Draw"
+  schemas:
+    MAXUser:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          minimum: 1
+        is_bot:
+          type: boolean
+    MAXUpdate:
+      type: object
+      required:
+      - update_type
+      - timestamp
+      properties:
+        update_type:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix milliseconds from the original MAX update. Daily actions
+            keep this source day; processing time controls cutoffs.
+          minimum: 1
+          maximum: 253402300799999
+        chat_id:
+          type: integer
+          format: int64
+        user:
+          "$ref": "#/components/schemas/MAXUser"
+        message:
+          type:
+          - object
+          - 'null'
+          description: Original message; null when it was deleted before callback delivery.
+          x-go-type-skip-optional-pointer: false
+          properties:
+            sender:
+              "$ref": "#/components/schemas/MAXUser"
+            recipient:
+              type: object
+              properties:
+                chat_type:
+                  type: string
+                  enum:
+                  - dialog
+                  - chat
+                  - channel
+            body:
+              type:
+              - object
+              - 'null'
+              description: Message content; null for a forwarded message without its own body.
+              x-go-type-skip-optional-pointer: false
+              properties:
+                mid:
+                  type: string
+                  maxLength: 256
+                text:
+                  type:
+                  - string
+                  - 'null'
+                  description: Message text or caption; absent or null when there is no text.
+                  x-go-type-skip-optional-pointer: false
+                  maxLength: 4000
+        callback:
+          type: object
+          properties:
+            callback_id:
+              type: string
+              maxLength: 256
+            user:
+              "$ref": "#/components/schemas/MAXUser"
+            payload:
+              type: string
+              maxLength: 512
+              description: start, promo, participate, check, chances, help, rules,
+                claim_begin:<offer>, claim:<offer>
+    Draw:
+      type: object
+      properties:
+        id:
+          type: string
+        campaign_id:
+          type: string
+        day_id:
+          type: string
+        kind:
+          type: string
+          enum:
+          - daily
+          - final
+        state:
+          type: string
+          enum:
+          - open
+          - drawn
+          - approved
+        closes_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        winner_count:
+          type: integer
+        reserve_count:
+          type: integer
+        prize:
+          type: string
+        candidates:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/Candidate"
+        selection:
+          "$ref": "#/components/schemas/Selection"
+        drawn_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        approved_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+      required:
+      - id
+      - campaign_id
+      - kind
+      - state
+      - closes_at
+      - winner_count
+      - reserve_count
+      - prize
+      - candidates
+      - selection
+      additionalProperties: false
+    Offer:
+      type: object
+      properties:
+        id:
+          type: string
+        slot_id:
+          type: string
+        draw_id:
+          type: string
+        user_id:
+          type: integer
+          format: int64
+        status:
+          type: string
+        name:
+          type: string
+        delivery_state:
+          type: string
+        sent_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        deadline:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        claimed_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        consent_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        delivery_error:
+          type: string
+      required:
+      - id
+      - slot_id
+      - draw_id
+      - user_id
+      - status
+      additionalProperties: false
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: integer
+          format: int64
+        text:
+          type: string
+        offer_id:
+          type: string
+        banner:
+          type: boolean
+        state:
+          type: string
+        attempts:
+          type: integer
+        buttons:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Button"
+        campaign_id:
+          type: string
+      required:
+      - id
+      - campaign_id
+      - user_id
+      - text
+      additionalProperties: false
+    Stats:
+      type: object
+      properties:
+        users:
+          type: integer
+        new_users_by_day:
+          type: object
+          additionalProperties:
+            type: integer
+        promo_requests:
+          type: integer
+        promo_issued:
+          type: integer
+        promo_remaining:
+          type: array
+          description: Stock grouped by partner channel_id. The partner name comes from
+            its first day; days preserves the daily breakdown.
+          items:
+            "$ref": "#/components/schemas/PartnerPromoStock"
+        entries:
+          type: object
+          additionalProperties:
+            type: integer
+        failed_messages:
+          type: integer
+      required:
+      - users
+      - new_users_by_day
+      - promo_requests
+      - promo_issued
+      - promo_remaining
+      - entries
+      - failed_messages
+      additionalProperties: false
+    PartnerPromoStock:
+      type: object
+      properties:
+        channel_id:
+          type: integer
+          format: int64
+        partner:
+          type: string
+          minLength: 1
+        remaining:
+          type: integer
+          minimum: 0
+        days:
+          type: array
+          items:
+            "$ref": "#/components/schemas/DayPromoStock"
+      required:
+      - channel_id
+      - partner
+      - remaining
+      - days
+      additionalProperties: false
+    DayPromoStock:
+      type: object
+      properties:
+        day_id:
+          type: string
+          minLength: 1
+        day_number:
+          type: integer
+          minimum: 1
+          maximum: 10
+        remaining:
+          type: integer
+          minimum: 0
+      required:
+      - day_id
+      - day_number
+      - remaining
+      additionalProperties: false
+    DemoRun:
+      type: object
+      properties:
+        id:
+          type: string
+        campaign_id:
+          type: string
+        day_id:
+          type: string
+        draw_id:
+          type: string
+        final_draw_id:
+          type: string
+        user_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+        offer_id:
+          type: string
+        now:
+          type: string
+          format: date-time
+      required:
+      - id
+      - campaign_id
+      - day_id
+      - draw_id
+      - final_draw_id
+      - user_ids
+      - now
+      additionalProperties: false
+    HealthStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+          - ready
+    ActionStatus:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - processed
+          - delivered
+          - queued
+          - 'yes'
+          - 'no'
+          - error
+    WebhookAck:
+      type: object
+      additionalProperties: false
+      required:
+      - accepted
+      - duplicate
+      properties:
+        accepted:
+          type: boolean
+        duplicate:
+          type: boolean
+        ignored:
+          type: boolean
+        event_id:
+          type: string
+    Candidate:
+      type: object
+      additionalProperties: false
+      required:
+      - user_id
+      - weight
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        weight:
+          type: integer
+          minimum: 1
+    Selection:
+      type: object
+      additionalProperties: false
+      required:
+      - winners
+      - reserve
+      properties:
+        winners:
+          type:
+          - array
+          - 'null'
+          items:
+            type: integer
+            format: int64
+        reserve:
+          type:
+          - array
+          - 'null'
+          items:
+            type: integer
+            format: int64
+    Button:
+      type: object
+      additionalProperties: false
+      required:
+      - text
+      properties:
+        text:
+          type: string
+        payload:
+          type: string
+        url:
+          type: string
+          format: uri
+    DrawList:
+      type: object
+      additionalProperties: false
+      required:
+      - draws
+      properties:
+        draws:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/Draw"
+    OfferList:
+      type: object
+      additionalProperties: false
+      required:
+      - offers
+      properties:
+        offers:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/Offer"
+    MessageList:
+      type: object
+      additionalProperties: false
+      required:
+      - messages
+      properties:
+        messages:
+          type:
+          - array
+          - 'null'
+          items:
+            "$ref": "#/components/schemas/Message"
