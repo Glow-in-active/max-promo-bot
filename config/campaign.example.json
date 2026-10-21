@@ -1,0 +1,360 @@
+{
+  "claim_ttl_seconds": 86400,
+  "campaign": {
+    "id": "autumn-promo-2026",
+    "name": "Десять дней подарков",
+    "status": "active",
+    "starts_at": "2026-11-01T00:00:00+03:00",
+    "ends_at": "2026-11-11T00:00:00+03:00",
+    "timezone": "Europe/Moscow",
+    "final_draw_id": "autumn-promo-2026-final",
+    "main_prize": "Два билета на концерт",
+    "rules": "Один активный день даёт один шанс на главный приз, максимум десять. Промокод не обязателен для участия. Ежедневный розыгрыш доступен после подтверждения подписки на канал партнёра. Победитель должен подтвердить получение приза и согласие на передачу имени и фамилии в течение 24 часов после уведомления. При пропуске срока приз переходит следующему резервному участнику."
+  },
+  "days": [
+    {
+      "id": "autumn-promo-2026-day-01",
+      "campaign_id": "autumn-promo-2026",
+      "number": 1,
+      "starts_at": "2026-11-01T00:00:00+03:00",
+      "ends_at": "2026-11-02T00:00:00+03:00",
+      "partner": "Партнёр 1",
+      "partner_url": "https://max.ru/demo_partner_01",
+      "channel_id": -15000000000001,
+      "instruction": "Используйте промокод до 02.11.2026 00:00 МСК на https://example.org/demo/01.",
+      "draw_id": "autumn-promo-2026-draw-01"
+    },
+    {
+      "id": "autumn-promo-2026-day-02",
+      "campaign_id": "autumn-promo-2026",
+      "number": 2,
+      "starts_at": "2026-11-02T00:00:00+03:00",
+      "ends_at": "2026-11-03T00:00:00+03:00",
+      "partner": "Партнёр 2",
+      "partner_url": "https://max.ru/demo_partner_02",
+      "channel_id": -15000000000002,
+      "instruction": "Используйте промокод до 03.11.2026 00:00 МСК на https://example.org/demo/02.",
+      "draw_id": "autumn-promo-2026-draw-02"
+    },
+    {
+      "id": "autumn-promo-2026-day-03",
+      "campaign_id": "autumn-promo-2026",
+      "number": 3,
+      "starts_at": "2026-11-03T00:00:00+03:00",
+      "ends_at": "2026-11-04T00:00:00+03:00",
+      "partner": "Партнёр 3",
+      "partner_url": "https://max.ru/demo_partner_03",
+      "channel_id": -15000000000003,
+      "instruction": "Используйте промокод до 04.11.2026 00:00 МСК на https://example.org/demo/03.",
+      "draw_id": "autumn-promo-2026-draw-03"
+    },
+    {
+      "id": "autumn-promo-2026-day-04",
+      "campaign_id": "autumn-promo-2026",
+      "number": 4,
+      "starts_at": "2026-11-04T00:00:00+03:00",
+      "ends_at": "2026-11-05T00:00:00+03:00",
+      "partner": "Партнёр 4",
+      "partner_url": "https://max.ru/demo_partner_04",
+      "channel_id": -15000000000004,
+      "instruction": "Используйте промокод до 05.11.2026 00:00 МСК на https://example.org/demo/04.",
+      "draw_id": "autumn-promo-2026-draw-04"
+    },
+    {
+      "id": "autumn-promo-2026-day-05",
+      "campaign_id": "autumn-promo-2026",
+      "number": 5,
+      "starts_at": "2026-11-05T00:00:00+03:00",
+      "ends_at": "2026-11-06T00:00:00+03:00",
+      "partner": "Партнёр 5",
+      "partner_url": "https://max.ru/demo_partner_05",
+      "channel_id": -15000000000005,
+      "instruction": "Используйте промокод до 06.11.2026 00:00 МСК на https://example.org/demo/05.",
+      "draw_id": "autumn-promo-2026-draw-05"
+    },
+    {
+      "id": "autumn-promo-2026-day-06",
+      "campaign_id": "autumn-promo-2026",
+      "number": 6,
+      "starts_at": "2026-11-06T00:00:00+03:00",
+      "ends_at": "2026-11-07T00:00:00+03:00",
+      "partner": "Партнёр 6",
+      "partner_url": "https://max.ru/demo_partner_06",
+      "channel_id": -15000000000006,
+      "instruction": "Используйте промокод до 07.11.2026 00:00 МСК на https://example.org/demo/06.",
+      "draw_id": "autumn-promo-2026-draw-06"
+    },
+    {
+      "id": "autumn-promo-2026-day-07",
+      "campaign_id": "autumn-promo-2026",
+      "number": 7,
+      "starts_at": "2026-11-07T00:00:00+03:00",
+      "ends_at": "2026-11-08T00:00:00+03:00",
+      "partner": "Партнёр 7",
+      "partner_url": "https://max.ru/demo_partner_07",
+      "channel_id": -15000000000007,
+      "instruction": "Используйте промокод до 08.11.2026 00:00 МСК на https://example.org/demo/07.",
+      "draw_id": "autumn-promo-2026-draw-07"
+    },
+    {
+      "id": "autumn-promo-2026-day-08",
+      "campaign_id": "autumn-promo-2026",
+      "number": 8,
+      "starts_at": "2026-11-08T00:00:00+03:00",
+      "ends_at": "2026-11-09T00:00:00+03:00",
+      "partner": "Партнёр 8",
+      "partner_url": "https://max.ru/demo_partner_08",
+      "channel_id": -15000000000008,
+      "instruction": "Используйте промокод до 09.11.2026 00:00 МСК на https://example.org/demo/08.",
+      "draw_id": "autumn-promo-2026-draw-08"
+    },
+    {
+      "id": "autumn-promo-2026-day-09",
+      "campaign_id": "autumn-promo-2026",
+      "number": 9,
+      "starts_at": "2026-11-09T00:00:00+03:00",
+      "ends_at": "2026-11-10T00:00:00+03:00",
+      "partner": "Партнёр 9",
+      "partner_url": "https://max.ru/demo_partner_09",
+      "channel_id": -15000000000009,
+      "instruction": "Используйте промокод до 10.11.2026 00:00 МСК на https://example.org/demo/09.",
+      "draw_id": "autumn-promo-2026-draw-09"
+    },
+    {
+      "id": "autumn-promo-2026-day-10",
+      "campaign_id": "autumn-promo-2026",
+      "number": 10,
+      "starts_at": "2026-11-10T00:00:00+03:00",
+      "ends_at": "2026-11-11T00:00:00+03:00",
+      "partner": "Партнёр 10",
+      "partner_url": "https://max.ru/demo_partner_10",
+      "channel_id": -15000000000010,
+      "instruction": "Используйте промокод до 11.11.2026 00:00 МСК на https://example.org/demo/10.",
+      "draw_id": "autumn-promo-2026-draw-10"
+    }
+  ],
+  "draws": [
+    {
+      "id": "autumn-promo-2026-draw-01",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-01",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-02T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 1"
+    },
+    {
+      "id": "autumn-promo-2026-draw-02",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-02",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-03T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 2"
+    },
+    {
+      "id": "autumn-promo-2026-draw-03",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-03",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-04T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 3"
+    },
+    {
+      "id": "autumn-promo-2026-draw-04",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-04",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-05T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 4"
+    },
+    {
+      "id": "autumn-promo-2026-draw-05",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-05",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-06T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 5"
+    },
+    {
+      "id": "autumn-promo-2026-draw-06",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-06",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-07T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 6"
+    },
+    {
+      "id": "autumn-promo-2026-draw-07",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-07",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-08T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 7"
+    },
+    {
+      "id": "autumn-promo-2026-draw-08",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-08",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-09T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 8"
+    },
+    {
+      "id": "autumn-promo-2026-draw-09",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-09",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-10T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 9"
+    },
+    {
+      "id": "autumn-promo-2026-draw-10",
+      "campaign_id": "autumn-promo-2026",
+      "day_id": "autumn-promo-2026-day-10",
+      "kind": "daily",
+      "state": "open",
+      "closes_at": "2026-11-11T00:00:00+03:00",
+      "winner_count": 1,
+      "reserve_count": 3,
+      "prize": "Подарок партнёра 10"
+    },
+    {
+      "id": "autumn-promo-2026-final",
+      "campaign_id": "autumn-promo-2026",
+      "kind": "final",
+      "state": "open",
+      "closes_at": "2026-11-11T00:00:00+03:00",
+      "winner_count": 5,
+      "reserve_count": 3,
+      "prize": "Два билета на концерт"
+    }
+  ],
+  "promos": [
+    {
+      "id": "autumn-promo-2026-day-01-code-001",
+      "day_id": "autumn-promo-2026-day-01",
+      "value": "DEMO-PARTNER-01-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-01-code-002",
+      "day_id": "autumn-promo-2026-day-01",
+      "value": "DEMO-PARTNER-01-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-02-code-001",
+      "day_id": "autumn-promo-2026-day-02",
+      "value": "DEMO-PARTNER-02-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-02-code-002",
+      "day_id": "autumn-promo-2026-day-02",
+      "value": "DEMO-PARTNER-02-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-03-code-001",
+      "day_id": "autumn-promo-2026-day-03",
+      "value": "DEMO-PARTNER-03-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-03-code-002",
+      "day_id": "autumn-promo-2026-day-03",
+      "value": "DEMO-PARTNER-03-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-04-code-001",
+      "day_id": "autumn-promo-2026-day-04",
+      "value": "DEMO-PARTNER-04-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-04-code-002",
+      "day_id": "autumn-promo-2026-day-04",
+      "value": "DEMO-PARTNER-04-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-05-code-001",
+      "day_id": "autumn-promo-2026-day-05",
+      "value": "DEMO-PARTNER-05-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-05-code-002",
+      "day_id": "autumn-promo-2026-day-05",
+      "value": "DEMO-PARTNER-05-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-06-code-001",
+      "day_id": "autumn-promo-2026-day-06",
+      "value": "DEMO-PARTNER-06-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-06-code-002",
+      "day_id": "autumn-promo-2026-day-06",
+      "value": "DEMO-PARTNER-06-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-07-code-001",
+      "day_id": "autumn-promo-2026-day-07",
+      "value": "DEMO-PARTNER-07-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-07-code-002",
+      "day_id": "autumn-promo-2026-day-07",
+      "value": "DEMO-PARTNER-07-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-08-code-001",
+      "day_id": "autumn-promo-2026-day-08",
+      "value": "DEMO-PARTNER-08-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-08-code-002",
+      "day_id": "autumn-promo-2026-day-08",
+      "value": "DEMO-PARTNER-08-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-09-code-001",
+      "day_id": "autumn-promo-2026-day-09",
+      "value": "DEMO-PARTNER-09-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-09-code-002",
+      "day_id": "autumn-promo-2026-day-09",
+      "value": "DEMO-PARTNER-09-002"
+    },
+    {
+      "id": "autumn-promo-2026-day-10-code-001",
+      "day_id": "autumn-promo-2026-day-10",
+      "value": "DEMO-PARTNER-10-001"
+    },
+    {
+      "id": "autumn-promo-2026-day-10-code-002",
+      "day_id": "autumn-promo-2026-day-10",
+      "value": "DEMO-PARTNER-10-002"
+    }
+  ]
+}
