@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="title desc">
+  <title id="title">Десять дней подарков</title>
+  <desc id="desc">Каждый активный день приближает к главному призу. Промокоды партнёров и ежедневные розыгрыши.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#121829"/><stop offset="1" stop-color="#29346a"/>
+    </linearGradient>
+    <linearGradient id="gift" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#e7ff97"/><stop offset="1" stop-color="#9cdce3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="480" rx="32" fill="url(#bg)"/>
+  <circle cx="1100" cy="40" r="280" fill="#6378ff" opacity=".12"/>
+  <circle cx="1010" cy="460" r="230" fill="#a5edd9" opacity=".08"/>
+  <g font-family="Arial, sans-serif">
+    <text x="72" y="93" fill="#b8c2ea" font-size="21" letter-spacing="4">ТВОЙ ФЕСТИВАЛЬНЫЙ ПРОПУСК</text>
+    <text x="68" y="190" fill="#ffffff" font-size="64" font-weight="700">Десять дней.</text>
+    <text x="68" y="269" fill="#dcfa9c" font-size="64" font-weight="700">Десять шансов.</text>
+    <text x="72" y="330" fill="#d7def5" font-size="25">Промокоды, подарки и главный приз.</text>
+    <rect x="72" y="371" width="282" height="47" rx="24" fill="#ffffff" fill-opacity=".1"/>
+    <text x="97" y="402" fill="#e9efff" font-size="20">Участвуй каждый день</text>
+  </g>
+  <g transform="translate(886 150) rotate(10 90 110)">
+    <rect x="0" y="72" width="196" height="166" rx="14" fill="url(#gift)"/>
+    <rect x="-13" y="50" width="222" height="49" rx="12" fill="#edffc0"/>
+    <rect x="80" y="50" width="36" height="188" fill="#5b63b6"/>
+    <path d="M97 49C38 54 23 17 43 6c23-13 52 15 54 43Zm1 0c59 5 74-32 54-43-23-13-52 15-54 43Z" fill="none" stroke="#edffc0" stroke-width="15" stroke-linejoin="round"/>
+  </g>
+</svg>
