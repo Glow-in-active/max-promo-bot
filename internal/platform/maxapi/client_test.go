@@ -85,7 +85,9 @@ func TestSendContract(t *testing.T) {
 			Buttons [][]button `json:"buttons"`
 		}
 		_ = json.Unmarshal(body.Attachments[1].Payload, &keyboard)
-		if len(keyboard.Buttons) != 2 || keyboard.Buttons[0][0].Payload != "promo" || keyboard.Buttons[1][0].URL != "https://example.org" {
+		if len(keyboard.Buttons) != 2 || keyboard.Buttons[0][0].Payload == nil ||
+			*keyboard.Buttons[0][0].Payload != "promo" || keyboard.Buttons[1][0].Payload != nil ||
+			keyboard.Buttons[1][0].URL != "https://example.org" {
 			t.Errorf("unexpected keyboard: %+v", keyboard)
 		}
 		_, _ = w.Write([]byte(`{"message":{"body":{"mid":"sent-1"}}}`))

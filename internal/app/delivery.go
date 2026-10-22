@@ -13,7 +13,7 @@ func (s *Service) enqueuePrize(ctx context.Context, tx Tx, d domain.Draw, o doma
 		CampaignID: d.CampaignID,
 		UserID:     o.UserID,
 		OfferID:    o.ID,
-		Text:       "Вы в числе победителей 🎉\nВаш приз: " + d.Prize + "\nНажмите кнопку, чтобы подтвердить получение.",
+		Text:       domain.PrizeText(d),
 		Buttons:    []domain.Button{{Text: "Получить приз", Payload: "claim_begin:" + o.ID}},
 	}
 	return tx.Enqueue(ctx, message, "prize:"+o.ID, now)
