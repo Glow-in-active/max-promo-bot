@@ -50,7 +50,17 @@ func assertResponseContract(t *testing.T, router routers.Router, method, path st
 			t.Fatal("empty CSV/SVG response")
 		}
 	}
-	input := &openapi3filter.ResponseValidationInput{RequestValidationInput: &openapi3filter.RequestValidationInput{Request: r, PathParams: params, Route: route}, Status: response.Code, Header: response.Header(), Body: io.NopCloser(bytes.NewReader(response.Body.Bytes())), Options: options}
+	input := &openapi3filter.ResponseValidationInput{
+		RequestValidationInput: &openapi3filter.RequestValidationInput{
+			Request:    r,
+			PathParams: params,
+			Route:      route,
+		},
+		Status:  response.Code,
+		Header:  response.Header(),
+		Body:    io.NopCloser(bytes.NewReader(response.Body.Bytes())),
+		Options: options,
+	}
 	if err = openapi3filter.ValidateResponse(context.Background(), input); err != nil {
 		t.Fatalf("%s %s: %v\nbody: %s", method, path, err, response.Body.String())
 	}
@@ -58,15 +68,38 @@ func assertResponseContract(t *testing.T, router routers.Router, method, path st
 
 func TestEveryOperationRespondsAccordingToGeneratedContract(t *testing.T) {
 	spec, router := contractRouter(t)
-	repo := &repositoryStub{run: domain.DemoRun{ID: "run", CampaignID: "campaign", DayID: "day", DrawID: "draw", FinalDrawID: "final", UserIDs: []int64{42}, Now: time.Now()}, messages: []domain.Message{}}
+	repo := &repositoryStub{
+		run: domain.DemoRun{
+			ID:          "run",
+			CampaignID:  "campaign",
+			DayID:       "day",
+			DrawID:      "draw",
+			FinalDrawID: "final",
+			UserIDs:     []int64{42},
+			Now:         time.Now(),
+		},
+		messages: []domain.Message{},
+	}
 	h := handler(repo, &serviceStub{}, "demo")
 	cases := []struct{ method, path, body, token string }{
-		{"GET", "/healthz", "", ""}, {"GET", "/readyz", "", ""}, {"GET", "/assets/banner.svg", "", ""},
+		{"GET", "/healthz", "", ""},
+		{"GET", "/readyz", "", ""},
+		{"GET", "/assets/banner.svg", "", ""},
 		{"POST", "/webhooks/max", `{"update_type":"bot_started","timestamp":1,"chat_id":1,"user":{"user_id":42}}`, ""},
-		{"POST", "/_demo/runs", `{"scenario":"standard"}`, "demo"}, {"GET", "/_demo/runs/c/messages", "", "demo"}, {"POST", "/_demo/runs/c/subscription", `{"user_id":42,"status":"yes"}`, "demo"},
-		{"GET", "/api/admin/campaigns/c/draws", "", "admin"}, {"POST", "/api/admin/campaigns/c/draws/d/run", "", "admin"}, {"POST", "/api/admin/campaigns/c/draws/d/approve", "", "admin"},
-		{"GET", "/api/admin/campaigns/c/draws/d/offers", "", "admin"}, {"GET", "/api/admin/campaigns/c/stats", "", "admin"}, {"GET", "/api/admin/campaigns/c/export.csv", "", "admin"},
-		{"GET", "/api/admin/offers/o", "", "admin"}, {"POST", "/api/admin/offers/o/retry", "", "admin"}, {"POST", "/api/admin/offers/o/expire", "", "admin"}, {"POST", "/api/admin/offers/o/delivered", "", "admin"}, {"POST", "/api/admin/tick", "", "admin"},
+		{"POST", "/_demo/runs", `{"scenario":"standard"}`, "demo"},
+		{"GET", "/_demo/runs/c/messages", "", "demo"},
+		{"POST", "/_demo/runs/c/subscription", `{"user_id":42,"status":"yes"}`, "demo"},
+		{"GET", "/api/admin/campaigns/c/draws", "", "admin"},
+		{"POST", "/api/admin/campaigns/c/draws/d/run", "", "admin"},
+		{"POST", "/api/admin/campaigns/c/draws/d/approve", "", "admin"},
+		{"GET", "/api/admin/campaigns/c/draws/d/offers", "", "admin"},
+		{"GET", "/api/admin/campaigns/c/stats", "", "admin"},
+		{"GET", "/api/admin/campaigns/c/export.csv", "", "admin"},
+		{"GET", "/api/admin/offers/o", "", "admin"},
+		{"POST", "/api/admin/offers/o/retry", "", "admin"},
+		{"POST", "/api/admin/offers/o/expire", "", "admin"},
+		{"POST", "/api/admin/offers/o/delivered", "", "admin"},
+		{"POST", "/api/admin/tick", "", "admin"},
 	}
 	covered := map[string]bool{}
 	for _, test := range cases {
