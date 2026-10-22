@@ -13,7 +13,7 @@ func (s *Service) enqueuePrize(ctx context.Context, tx Tx, d domain.Draw, o doma
 		CampaignID: d.CampaignID,
 		UserID:     o.UserID,
 		OfferID:    o.ID,
-		Text:       "Вы в числе победителей 🎉\nВаш приз: " + d.Prize + "\nНажмите кнопку, чтобы подтвердить получение.",
+		Text:       domain.PrizeText(d),
 		Buttons:    []domain.Button{{Text: "Получить приз", Payload: "claim_begin:" + o.ID}},
 	}
 	return tx.Enqueue(ctx, message, "prize:"+o.ID, now)
@@ -114,7 +114,11 @@ func (s *Service) RetryDelivery(ctx context.Context, offerID, actor string) erro
 			return err
 		}
 		if o.Status != "pending" {
-			return domain.UserFail(domain.InvalidTransition, "Delivery retry is allowed only before delivery confirmation.", "Повторная отправка разрешена только до подтверждения доставки.")
+			return domain.UserFail(
+				domain.InvalidTransition,
+				"Delivery retry is allowed only before delivery confirmation.",
+				"Повторная отправка разрешена только до подтверждения доставки.",
+			)
 		}
 		now := s.Now()
 		if err := tx.RetryOfferMessage(ctx, offerID, now); err != nil {

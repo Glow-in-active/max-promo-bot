@@ -64,7 +64,11 @@ func (s *Service) RunDraw(ctx context.Context, campaignID, drawID, actor string)
 		return nil
 	})
 	if err == nil && created {
-		s.logger.InfoContext(ctx, "draw completed", "draw_ref", observability.Ref(result.ID), "kind", result.Kind, "candidates", len(result.Candidates), "winners", len(result.Selection.Winners))
+		s.logger.InfoContext(ctx, "draw completed",
+			"draw_ref", observability.Ref(result.ID),
+			"kind", result.Kind,
+			"candidates", len(result.Candidates),
+			"winners", len(result.Selection.Winners))
 	}
 	return result, err
 }

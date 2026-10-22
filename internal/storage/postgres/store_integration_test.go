@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -548,6 +549,18 @@ func TestInvalidCampaignImportLeavesNoData(t *testing.T) {
 	cases := map[string]func(*domain.Setup){
 		"empty timezone": func(setup *domain.Setup) { setup.Campaign.Timezone = "" },
 		"host timezone":  func(setup *domain.Setup) { setup.Campaign.Timezone = "Local" },
+		"partner link": func(setup *domain.Setup) {
+			setup.Days[0].PartnerURL = "https://max.ru/" + strings.Repeat("П", 2048)
+		},
+		"rules message": func(setup *domain.Setup) { setup.Campaign.Rules = strings.Repeat("П", 4001) },
+		"promo message": func(setup *domain.Setup) {
+			setup.Days[0].Instruction = strings.Repeat("И", 2000)
+			setup.Promos[0].Value = strings.Repeat("К", 2000)
+		},
+		"prize notification": func(setup *domain.Setup) { setup.Draws[0].Prize = strings.Repeat("П", 4000) },
+		"registration summary": func(setup *domain.Setup) {
+			setup.Campaign.MainPrize = strings.Repeat("Б", 3800)
+		},
 		"no final reserve": func(setup *domain.Setup) {
 			for i := range setup.Draws {
 				if setup.Draws[i].Kind == "final" {

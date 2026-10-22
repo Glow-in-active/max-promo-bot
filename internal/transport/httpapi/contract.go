@@ -21,9 +21,11 @@ func (s *server) contractHandler() http.Handler {
 	if err = spec.Validate(context.Background()); err != nil {
 		panic("invalid embedded OpenAPI contract: " + err.Error())
 	}
-	router := generated.HandlerWithOptions(s, generated.StdHTTPServerOptions{ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
-		writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request parameters.")
-	}})
+	router := generated.HandlerWithOptions(s, generated.StdHTTPServerOptions{
+		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
+			writeError(w, http.StatusBadRequest, "invalid_request", "Invalid request parameters.")
+		},
+	})
 	return nethttpmiddleware.OapiRequestValidatorWithOptions(spec, &nethttpmiddleware.Options{
 		DoNotValidateServers: true,
 		Options:              openapi3filter.Options{AuthenticationFunc: s.authenticate},
@@ -53,11 +55,13 @@ func contractError(_ context.Context, err error, w http.ResponseWriter, r *http.
 	if options.MatchedRoute != nil {
 		recordRoute(r, options.MatchedRoute.Route.Path)
 	}
+
 	var size *http.MaxBytesError
 	if errors.As(err, &size) {
 		writeError(w, http.StatusRequestEntityTooLarge, "body_too_large", "Request body is too large.")
 		return
 	}
+
 	var security *openapi3filter.SecurityRequirementsError
 	if errors.As(err, &security) {
 		w.Header().Set("WWW-Authenticate", "Bearer")
@@ -68,7 +72,8 @@ func contractError(_ context.Context, err error, w http.ResponseWriter, r *http.
 		writeError(w, options.StatusCode, "not_found", "Route not found.")
 		return
 	}
-	if options.MatchedRoute != nil && options.MatchedRoute.Route.Operation.RequestBody != nil && strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
+	if options.MatchedRoute != nil && options.MatchedRoute.Route.Operation.RequestBody != nil &&
+		strings.Split(r.Header.Get("Content-Type"), ";")[0] != "application/json" {
 		writeError(w, http.StatusUnsupportedMediaType, "unsupported_media_type", "Content-Type must be application/json.")
 		return
 	}

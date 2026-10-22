@@ -1,5 +1,6 @@
 SHELL := /bin/sh
 .DEFAULT_GOAL := help
+TEST_RUNNER := go run -tags=tools ./scripts/testsuite
 
 .PHONY: help up down logs test race coverage fmt vet check integration integration-local mutate mutate-integration e2e e2e-local test-tools verify-local smoke build docs docs-check generate check-generated simulator simulator-down simulator-check
 
@@ -39,14 +40,14 @@ build:
 	go build -trimpath -o bin/promo ./cmd/promo
 
 test:
-	go test -count=1 ./...
+	$(TEST_RUNNER) -count=1 ./...
 
 race:
-	go test -race -count=1 ./...
+	$(TEST_RUNNER) -race -count=1 ./...
 
 coverage:
 	mkdir -p .coverage
-	go test -race -covermode=atomic -coverprofile=.coverage/unit.out ./...
+	$(TEST_RUNNER) -race -count=1 -covermode=atomic -coverprofile=.coverage/unit.out ./...
 	go tool cover -func=.coverage/unit.out
 
 fmt:
@@ -63,7 +64,7 @@ integration:
 
 integration-local:
 	@test -n "$$TEST_DATABASE_URL" || { printf '%s\n' 'TEST_DATABASE_URL must point to a disposable test database'; exit 1; }
-	go test -tags=integration -race -count=1 -timeout=120s ./...
+	$(TEST_RUNNER) -tags=integration -race -count=1 -timeout=120s ./...
 
 mutate:
 	./scripts/mutate.sh
@@ -72,14 +73,14 @@ mutate-integration:
 	./scripts/mutate.sh --integration
 
 test-tools:
-	go test -tags=tools -race -count=1 ./scripts/mutation
+	$(TEST_RUNNER) -tags=tools -race -count=1 ./scripts/...
 
 e2e:
-	docker compose --profile test run --build --rm integration go test -tags=integration -race -count=1 -timeout=120s -run '^TestMAXEndToEnd' ./internal/app
+	docker compose --profile test run --build --rm integration $(TEST_RUNNER) -tags=integration -race -count=1 -timeout=120s -run '^TestMAXEndToEnd' ./internal/app
 
 e2e-local:
 	@test -n "$$TEST_DATABASE_URL" || { printf '%s\n' 'TEST_DATABASE_URL must point to a disposable test database'; exit 1; }
-	go test -tags=integration -race -count=1 -timeout=120s -run '^TestMAXEndToEnd' ./internal/app
+	$(TEST_RUNNER) -tags=integration -race -count=1 -timeout=120s -run '^TestMAXEndToEnd' ./internal/app
 
 verify-local: fmt vet check-generated test-tools integration-local mutate mutate-integration
 

@@ -63,7 +63,11 @@ func (s *Store) Migrate(ctx context.Context) error {
 	if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(824125891)"); err != nil {
 		return err
 	}
-	if _, err = tx.Exec(ctx, "CREATE TABLE IF NOT EXISTS schema_migrations (version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())"); err != nil {
+	if _, err = tx.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version text PRIMARY KEY,
+			applied_at timestamptz NOT NULL DEFAULT now()
+		)`); err != nil {
 		return err
 	}
 	files, err := fs.Glob(migrationFiles, "migrations/*.sql")
@@ -73,7 +77,9 @@ func (s *Store) Migrate(ctx context.Context) error {
 	sort.Strings(files)
 	for _, name := range files {
 		var exists bool
-		if err = tx.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version=$1)", name).Scan(&exists); err != nil {
+		if err = tx.QueryRow(ctx,
+			"SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version=$1)", name,
+		).Scan(&exists); err != nil {
 			return err
 		}
 		if exists {
@@ -164,11 +170,14 @@ func newID() string {
 	return hex.EncodeToString(b[:])
 }
 
-const campaignFields = `id,name,status,starts_at,ends_at,timezone,final_draw_id,main_prize,rules`
+const campaignFields = `id, name, status, starts_at, ends_at, timezone, final_draw_id, main_prize, rules`
 
 func scanCampaign(row scanner) (domain.Campaign, error) {
 	var c domain.Campaign
-	err := row.Scan(&c.ID, &c.Name, &c.Status, &c.StartsAt, &c.EndsAt, &c.Timezone, &c.FinalDrawID, &c.MainPrize, &c.Rules)
+	err := row.Scan(
+		&c.ID, &c.Name, &c.Status, &c.StartsAt, &c.EndsAt,
+		&c.Timezone, &c.FinalDrawID, &c.MainPrize, &c.Rules,
+	)
 	return c, missing(err, "Campaign")
 }
 
@@ -189,16 +198,22 @@ func (t *transaction) SetCampaignClosed(ctx context.Context, id string) error {
 	return changed(tag, err, "Campaign")
 }
 
-const dayFields = `id,campaign_id,number,starts_at,ends_at,partner,partner_url,channel_id,instruction,draw_id`
+const dayFields = `id, campaign_id, number, starts_at, ends_at, partner, partner_url, channel_id, instruction, draw_id`
 
 func scanDay(row scanner) (domain.Day, error) {
 	var d domain.Day
-	err := row.Scan(&d.ID, &d.CampaignID, &d.Number, &d.StartsAt, &d.EndsAt, &d.Partner, &d.PartnerURL, &d.ChannelID, &d.Instruction, &d.DrawID)
+	err := row.Scan(
+		&d.ID, &d.CampaignID, &d.Number, &d.StartsAt, &d.EndsAt,
+		&d.Partner, &d.PartnerURL, &d.ChannelID, &d.Instruction, &d.DrawID,
+	)
 	return d, missing(err, "Campaign day")
 }
 
 func dayAt(ctx context.Context, q querier, campaign string, now time.Time) (domain.Day, error) {
-	return scanDay(q.QueryRow(ctx, "SELECT "+dayFields+" FROM days WHERE campaign_id=$1 AND starts_at<=$2 AND ends_at>$2", campaign, now))
+	return scanDay(q.QueryRow(ctx, "SELECT "+dayFields+`
+		FROM days
+		WHERE campaign_id=$1 AND starts_at<=$2 AND ends_at>$2`, campaign, now,
+	))
 }
 
 func (s *Store) CurrentDay(ctx context.Context, c string, now time.Time) (domain.Day, error) {
@@ -227,7 +242,10 @@ func (t *transaction) Days(ctx context.Context, c string) ([]domain.Day, error) 
 }
 
 func (t *transaction) UserForUpdate(ctx context.Context, id int64, now time.Time) (domain.User, error) {
-	if _, err := t.tx.Exec(ctx, "INSERT INTO users(id,started_at) VALUES($1,$2) ON CONFLICT(id) DO NOTHING", id, now); err != nil {
+	if _, err := t.tx.Exec(ctx, `
+		INSERT INTO users(id, started_at)
+		VALUES($1, $2)
+		ON CONFLICT(id) DO NOTHING`, id, now); err != nil {
 		return domain.User{}, err
 	}
 	var u domain.User
@@ -236,12 +254,19 @@ func (t *transaction) UserForUpdate(ctx context.Context, id int64, now time.Time
 }
 
 func (t *transaction) TouchCampaignUser(ctx context.Context, c string, u int64, now time.Time) error {
-	_, err := t.tx.Exec(ctx, "INSERT INTO campaign_users(campaign_id,user_id,started_at) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", c, u, now)
+	_, err := t.tx.Exec(ctx, `
+		INSERT INTO campaign_users(campaign_id, user_id, started_at)
+		VALUES($1, $2, $3)
+		ON CONFLICT DO NOTHING`, c, u, now)
 	return err
 }
 
 func activities(ctx context.Context, q querier, c string, u int64) ([]domain.Activity, error) {
-	rows, err := q.Query(ctx, `SELECT a.day_id,d.number,d.partner,a.created_at FROM activities a JOIN days d ON d.id=a.day_id WHERE a.campaign_id=$1 AND a.user_id=$2 ORDER BY d.number`, c, u)
+	rows, err := q.Query(ctx, `
+		SELECT a.day_id, d.number, d.partner, a.created_at
+		FROM activities a JOIN days d ON d.id=a.day_id
+		WHERE a.campaign_id=$1 AND a.user_id=$2
+		ORDER BY d.number`, c, u)
 	if err != nil {
 		return nil, err
 	}
@@ -265,14 +290,22 @@ func (t *transaction) Activities(ctx context.Context, c string, u int64) ([]doma
 	return activities(ctx, t.tx, c, u)
 }
 
-func (t *transaction) AddActivity(ctx context.Context, c string, u int64, d domain.Day, source string, now time.Time) error {
-	_, err := t.tx.Exec(ctx, "INSERT INTO activities(campaign_id,user_id,day_id,source,created_at) VALUES($1,$2,$3,$4,$5)", c, u, d.ID, source, now)
+func (t *transaction) AddActivity(
+	ctx context.Context, c string, u int64, d domain.Day, source string, now time.Time,
+) error {
+	_, err := t.tx.Exec(ctx, `
+		INSERT INTO activities(campaign_id, user_id, day_id, source, created_at)
+		VALUES($1, $2, $3, $4, $5)`, c, u, d.ID, source, now)
 	return err
 }
 
 func (t *transaction) Assignment(ctx context.Context, day string, u int64) (*domain.Promo, error) {
 	var p domain.Promo
-	err := t.tx.QueryRow(ctx, "SELECT id,day_id,value,user_id FROM promos WHERE day_id=$1 AND user_id=$2", day, u).Scan(&p.ID, &p.DayID, &p.Value, &p.UserID)
+	err := t.tx.QueryRow(ctx, `
+		SELECT id, day_id, value, user_id
+		FROM promos
+		WHERE day_id=$1 AND user_id=$2`, day, u,
+	).Scan(&p.ID, &p.DayID, &p.Value, &p.UserID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -290,7 +323,12 @@ func (t *transaction) LockPool(ctx context.Context, day string) error {
 
 func (t *transaction) NextPromo(ctx context.Context, day string) (*domain.Promo, error) {
 	var p domain.Promo
-	err := t.tx.QueryRow(ctx, "SELECT id,day_id,value FROM promos WHERE day_id=$1 AND user_id IS NULL ORDER BY id LIMIT 1 FOR UPDATE", day).Scan(&p.ID, &p.DayID, &p.Value)
+	err := t.tx.QueryRow(ctx, `
+		SELECT id, day_id, value
+		FROM promos
+		WHERE day_id=$1 AND user_id IS NULL
+		ORDER BY id LIMIT 1 FOR UPDATE`, day,
+	).Scan(&p.ID, &p.DayID, &p.Value)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -301,12 +339,17 @@ func (t *transaction) NextPromo(ctx context.Context, day string) (*domain.Promo,
 }
 
 func (t *transaction) AssignPromo(ctx context.Context, id string, u int64, now time.Time) error {
-	tag, err := t.tx.Exec(ctx, "UPDATE promos SET user_id=$2,assigned_at=$3 WHERE id=$1 AND user_id IS NULL", id, u, now)
+	tag, err := t.tx.Exec(ctx, `
+		UPDATE promos
+		SET user_id=$2, assigned_at=$3
+		WHERE id=$1 AND user_id IS NULL`, id, u, now)
 	return changed(tag, err, "Unassigned promo code")
 }
 
 func (t *transaction) RecordPromoRequest(ctx context.Context, campaign string, u int64, now time.Time) error {
-	_, err := t.tx.Exec(ctx, "INSERT INTO promo_requests(campaign_id,user_id,created_at) VALUES($1,$2,$3)", campaign, u, now)
+	_, err := t.tx.Exec(ctx,
+		"INSERT INTO promo_requests(campaign_id,user_id,created_at) VALUES($1,$2,$3)", campaign, u, now,
+	)
 	return err
 }
 
@@ -322,7 +365,9 @@ func (t *transaction) AddEntry(ctx context.Context, d string, u int64, now time.
 }
 
 func (t *transaction) Audit(ctx context.Context, c, action, detail string, now time.Time) error {
-	_, err := t.tx.Exec(ctx, "INSERT INTO audit_events(campaign_id,action,detail,created_at) VALUES($1,$2,$3,$4)", c, action, detail, now)
+	_, err := t.tx.Exec(ctx, `
+		INSERT INTO audit_events(campaign_id, action, detail, created_at)
+		VALUES($1, $2, $3, $4)`, c, action, detail, now)
 	return err
 }
 
@@ -336,7 +381,11 @@ func (t *transaction) PendingClaim(ctx context.Context, u int64) (string, string
 }
 
 func (t *transaction) SetPendingClaim(ctx context.Context, u int64, offer, name string) error {
-	_, err := t.tx.Exec(ctx, "INSERT INTO pending_claims(user_id,offer_id,name) VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET offer_id=excluded.offer_id,name=excluded.name", u, offer, name)
+	_, err := t.tx.Exec(ctx, `
+		INSERT INTO pending_claims(user_id, offer_id, name)
+		VALUES($1, $2, $3)
+		ON CONFLICT(user_id) DO UPDATE
+		SET offer_id=excluded.offer_id, name=excluded.name`, u, offer, name)
 	return err
 }
 
