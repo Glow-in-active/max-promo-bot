@@ -1,0 +1,80 @@
+name: promo-simulator
+
+x-bot-env: &bot-env
+  DATABASE_URL: ''
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: '5432'
+  POSTGRES_DB: promo_simulator
+  POSTGRES_USER: promo_simulator
+  POSTGRES_PASSWORD: local-simulator-db-password
+  POSTGRES_SSLMODE: disable
+  HTTP_ADDR: :8080
+  MODE: simulator
+  ADMIN_TOKEN: local-administrator-token
+  DEMO_TOKEN: local-demo-token
+  MAX_WEBHOOK_SECRET: local-webhook-secret
+  MAX_TOKEN: local-simulator-token
+  MAX_API_URL: http://simulator:4010
+  CAMPAIGN_ID: ''
+  MAX_BANNER_URL: https://simulator:4011/assets/banner.png
+  MAX_CA_FILE: ''
+  LOG_LEVEL: info
+
+services:
+  postgres:
+    extends:
+      file: ../../compose.yaml
+      service: postgres
+    command: [postgres]
+    environment:
+      POSTGRES_DB: promo_simulator
+      POSTGRES_USER: promo_simulator
+      POSTGRES_PASSWORD: local-simulator-db-password
+      PGPORT: '5432'
+
+  migrate:
+    extends:
+      file: ../../compose.yaml
+      service: migrate
+    image: promo:simulator
+    environment: *bot-env
+
+  bot:
+    extends:
+      file: ../../compose.yaml
+      service: app
+    image: promo:simulator
+    environment: *bot-env
+    ports: !reset []
+
+  simulator:
+    image: promo-max-simulator:local
+    build:
+      context: ../..
+      dockerfile: dev/max-simulator/Dockerfile
+    environment:
+      BOT_URL: http://bot:8080
+      MAX_TOKEN: local-simulator-token
+      ADMIN_TOKEN: local-administrator-token
+      DEMO_TOKEN: local-demo-token
+      MAX_WEBHOOK_SECRET: local-webhook-secret
+    ports:
+      - '127.0.0.1:${SIMULATOR_PORT:-4010}:4010'
+    depends_on:
+      bot:
+        condition: service_healthy
+    user: '65532:65532'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    stop_grace_period: 10s
+    healthcheck:
+      test: [CMD, node, src/healthcheck.mjs]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

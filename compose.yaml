@@ -1,0 +1,136 @@
+name: promo
+
+x-runtime: &runtime
+  image: promo:local
+  build:
+    context: .
+    target: runtime
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  stop_grace_period: 15s
+
+x-app-env: &app-env
+  DATABASE_URL: ${DATABASE_URL:-}
+  POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+  POSTGRES_PORT: '${POSTGRES_PORT:-5432}'
+  POSTGRES_DB: ${POSTGRES_DB:-promo}
+  POSTGRES_USER: ${POSTGRES_USER:-promo}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdemo-db-password}
+  POSTGRES_SSLMODE: ${POSTGRES_SSLMODE:-disable}
+  HTTP_ADDR: :8080
+  MODE: ${MODE:-demo}
+  ADMIN_TOKEN: ${ADMIN_TOKEN:-local-administrator-token}
+  DEMO_TOKEN: ${DEMO_TOKEN:-local-demo-token}
+  MAX_TOKEN: ${MAX_TOKEN:-}
+  MAX_WEBHOOK_SECRET: ${MAX_WEBHOOK_SECRET:-local-webhook-secret}
+  CAMPAIGN_ID: ${CAMPAIGN_ID:-}
+  MAX_BANNER_URL: ${MAX_BANNER_URL:-}
+  MAX_CA_FILE: ${MAX_CA_FILE:-}
+  MAX_API_URL: ${MAX_API_URL:-https://platform-api2.max.ru}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    command: [postgres, -p, '${POSTGRES_PORT:-5432}']
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-promo}
+      POSTGRES_USER: ${POSTGRES_USER:-promo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdemo-db-password}
+      PGPORT: '${POSTGRES_PORT:-5432}'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -p "$${PGPORT}" -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  migrate:
+    <<: *runtime
+    command: [migrate]
+    environment: *app-env
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    <<: *runtime
+    command: [serve]
+    environment: *app-env
+    ports:
+      - '127.0.0.1:${HTTP_PORT:-8080}:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  postgres-test:
+    profiles: [test]
+    image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    environment:
+      POSTGRES_DB: promo_test
+      POSTGRES_USER: promo_test
+      POSTGRES_PASSWORD: localtest-db-password
+    ports:
+      - '127.0.0.1:${TEST_DATABASE_PORT:-5433}:5432'
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  integration:
+    profiles: [test]
+    build:
+      context: .
+      target: test
+    environment:
+      TEST_DATABASE_URL: postgres://promo_test:localtest-db-password@postgres-test:5432/promo_test?sslmode=disable
+    command: [go, test, -tags=integration, -race, -count=1, -timeout=120s, ./...]
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    restart: "no"
+
+  docs:
+    profiles: [docs]
+    image: squidfunk/mkdocs-material:9.7.7@sha256:51b87149d227691486b5f08993d28c65ca7e4990010664b697265b8e6fcd5287
+    user: '65532:65532'
+    working_dir: /docs
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      PYTHONDONTWRITEBYTECODE: '1'
+      NO_MKDOCS_2_WARNING: 'true'
+    volumes:
+      - ./mkdocs.yml:/docs/mkdocs.yml:ro
+      - ./docs:/docs/docs:ro
+      - ./api:/docs/api:ro
+      - ./postman:/docs/postman:ro
+      - ./scripts/docs_hook.py:/docs/scripts/docs_hook.py:ro
+    tmpfs:
+      - /tmp:uid=65532,gid=65532,mode=1777
+    command: [serve, --dev-addr=0.0.0.0:8000, --strict]
+    ports:
+      - '127.0.0.1:8000:8000'
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/", timeout=2)']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    stop_grace_period: 5s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

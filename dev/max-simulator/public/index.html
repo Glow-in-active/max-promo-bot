@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>MAX Simulator · Промоакции</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <script src="/assets/app.js" type="module"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-icon" aria-hidden="true">M</span><div>MAX Simulator<small>Бот промоакций</small></div></div>
+        <section class="panel">
+          <h2>Сценарий</h2>
+          <label for="scenario">Что проверяем</label>
+          <select id="scenario">
+            <option value="standard">Участие в акции</option>
+            <option value="exhausted">Промокоды закончились</option>
+            <option value="drawable">Дневной розыгрыш</option>
+            <option value="final">Финальный розыгрыш</option>
+            <option value="expired">Срок получения истёк</option>
+          </select>
+          <p id="scenario-description" class="hint"></p>
+          <button id="new-run" class="button secondary full" type="button">Новый сценарий</button>
+        </section>
+        <section class="panel">
+          <h2>Участник</h2>
+          <label for="user">Диалог</label>
+          <select id="user" disabled></select>
+          <label for="subscription">Подписка на канал партнёра</label>
+          <select id="subscription" disabled>
+            <option value="yes">Подписан</option>
+            <option value="no">Не подписан</option>
+            <option value="error">Ошибка проверки</option>
+          </select>
+          <button id="replay" class="button quiet full" type="button" disabled>Повторить событие</button>
+          <p id="delivery-status" class="hint" aria-live="polite"></p>
+        </section>
+        <div class="sidebar-footer"><span id="connection-dot" class="status-dot"></span><span id="connection-status" role="status">Подключение</span></div>
+      </aside>
+
+      <main class="chat">
+        <header class="chat-header">
+          <div class="bot-avatar" aria-hidden="true">П</div>
+          <div class="chat-title"><h1>Промоакции</h1><p id="chat-subtitle">Выберите сценарий</p></div>
+          <button id="start" class="button secondary" type="button" disabled>Начать</button>
+        </header>
+        <div id="error" class="error-banner" role="alert" hidden><span id="error-text"></span><button id="dismiss-error" type="button" aria-label="Закрыть ошибку">×</button></div>
+        <div id="messages" class="messages" role="log" aria-label="Сообщения" aria-live="polite" aria-relevant="additions" tabindex="0">
+          <div class="chat-empty"><span aria-hidden="true">✳</span><h2>Поговорите с ботом</h2><p>Нажмите «Начать», затем выбирайте кнопки в сообщениях.</p></div>
+        </div>
+        <form id="composer" class="composer">
+          <label class="visually-hidden" for="message">Сообщение боту</label>
+          <input id="message" type="text" placeholder="Сообщение боту" autocomplete="off" maxlength="4000" disabled>
+          <button id="send" class="button primary" type="submit" disabled>Отправить</button>
+        </form>
+      </main>
+
+      <aside class="inspector">
+        <section class="panel">
+          <div class="panel-heading"><h2>Акция</h2><span class="badge">Локально</span></div>
+          <dl class="stats">
+            <div><dt>Участники</dt><dd id="stat-users">0</dd></div>
+            <div><dt>Промокоды</dt><dd id="stat-issued">0</dd></div>
+            <div><dt>Дневные заявки</dt><dd id="stat-entries">0</dd></div>
+            <div><dt>Кодов осталось</dt><dd id="stat-remaining">0</dd></div>
+          </dl>
+        </section>
+        <section class="panel">
+          <h2>Розыгрыш</h2>
+          <label for="draw">Выберите розыгрыш</label>
+          <select id="draw" disabled></select>
+          <p id="draw-state" class="hint">Создайте сценарий</p>
+          <div class="button-row"><button id="draw-run" class="button secondary" type="button" disabled>Разыграть</button><button id="draw-approve" class="button secondary" type="button" disabled>Подтвердить</button></div>
+          <p id="draw-prize" class="prize"></p>
+        </section>
+        <section class="panel offers-panel">
+          <h2>Получение призов</h2>
+          <p id="offers-empty" class="hint">Здесь появятся победители и резерв.</p>
+          <div id="offers" class="offers"></div>
+        </section>
+      </aside>
+    </div>
+  </body>
+</html>
