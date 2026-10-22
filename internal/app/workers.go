@@ -66,7 +66,10 @@ func (s *Service) Work(ctx context.Context, logger *slog.Logger) {
 	loops := []struct {
 		name string
 		run  func(context.Context) error
-	}{{"inbox", s.processInbox}, {"scheduler", s.Tick}}
+	}{
+		{name: "inbox", run: s.processInbox},
+		{name: "scheduler", run: s.Tick},
+	}
 	logger.InfoContext(ctx, "workers started")
 	done := make(chan struct{}, len(loops)+s.outboxWorkers)
 	for _, loop := range loops {
@@ -122,7 +125,9 @@ func (s *Service) processInbox(ctx context.Context) error {
 	if err != nil || event == nil {
 		return err
 	}
-	s.logger.DebugContext(ctx, "inbox event acquired", "event_ref", observability.Ref(event.ID), "attempt", event.Attempts)
+	s.logger.DebugContext(ctx, "inbox event acquired",
+		"event_ref", observability.Ref(event.ID),
+		"attempt", event.Attempts)
 	_, err = s.Execute(ctx, event.Command)
 	if err != nil {
 		if ctx.Err() != nil {
@@ -130,7 +135,10 @@ func (s *Service) processInbox(ctx context.Context) error {
 		}
 		failed := event.Attempts >= 5
 		next := s.Now().Add(backoff(event.Attempts))
-		attrs := append(observability.ErrorAttrs(err), slog.String("event_ref", observability.Ref(event.ID)), slog.Int("attempt", event.Attempts), slog.Bool("failed", failed))
+		attrs := append(observability.ErrorAttrs(err),
+			slog.String("event_ref", observability.Ref(event.ID)),
+			slog.Int("attempt", event.Attempts),
+			slog.Bool("failed", failed))
 		level := slog.LevelWarn
 		if failed {
 			level = slog.LevelError
@@ -145,88 +153,6 @@ func (s *Service) processInbox(ctx context.Context) error {
 	}
 	s.logger.DebugContext(ctx, "inbox event completed", "event_ref", observability.Ref(event.ID))
 	return nil
-}
-
-func (s *Service) processMessage(ctx context.Context) error {
-	_, err := s.processNextMessage(ctx)
-	return err
-}
-
-func (s *Service) processNextMessage(ctx context.Context) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.workTimeout)
-	defer cancel()
-	message, err := s.repo.TakeMessage(ctx, s.Now())
-	if err != nil || message == nil {
-		return false, err
-	}
-	s.logger.DebugContext(ctx, "outbox message acquired", "message_ref", observability.Ref(message.ID), "attempt", message.Attempts)
-	sendCtx := ctx
-	cancelSend := func() {}
-	if message.OfferID != "" {
-		offer, err := s.repo.Offer(ctx, message.OfferID)
-		if err != nil {
-			return true, err
-		}
-		if offer.Status == "expired" || offer.Status == "claimed" || offer.Deadline != nil && !s.Now().Before(*offer.Deadline) {
-			return true, s.repo.FinishMessage(ctx, message.ID)
-		}
-		if offer.Deadline != nil {
-			sendCtx, cancelSend = context.WithTimeout(ctx, offer.Deadline.Sub(s.Now()))
-		}
-	}
-	defer cancelSend()
-	if err = s.messenger.Send(sendCtx, *message); err != nil {
-		if ctx.Err() != nil {
-			return true, ctx.Err()
-		}
-		if errors.Is(sendCtx.Err(), context.DeadlineExceeded) {
-			return true, s.repo.FinishMessage(ctx, message.ID)
-		}
-		permanent := message.Attempts >= 5
-		detail := "delivery failed"
-		var uncertain interface{ Uncertain() bool }
-		var temporary interface{ Temporary() bool }
-		if message.OfferID != "" && errors.As(err, &uncertain) && uncertain.Uncertain() {
-			permanent = true
-			detail = "delivery uncertain"
-		} else if errors.As(err, &temporary) && !temporary.Temporary() {
-			permanent = true
-			detail = "delivery rejected"
-		}
-		delay := backoff(message.Attempts)
-		var provider interface{ RetryDelay() time.Duration }
-		if errors.As(err, &provider) {
-			delay = max(delay, provider.RetryDelay())
-		}
-		next := s.Now().Add(delay)
-		attrs := append(observability.ErrorAttrs(err), slog.String("message_ref", observability.Ref(message.ID)), slog.Int("attempt", message.Attempts), slog.Bool("failed", permanent))
-		level := slog.LevelWarn
-		if permanent {
-			level = slog.LevelError
-		} else {
-			attrs = append(attrs, slog.Time("retry_at", next))
-		}
-		if err := s.repo.RetryMessage(ctx, message.ID, detail, next, permanent); err != nil {
-			return true, err
-		}
-		s.logger.LogAttrs(ctx, level, detail, attrs...)
-		return true, nil
-	}
-	if err := ctx.Err(); err != nil {
-		return true, err
-	}
-	// Confirm the deadline before acknowledging the job. A crash can duplicate a
-	// notification, but cannot silently discard the durable delivery intention.
-	if message.OfferID != "" {
-		if err := s.MarkDelivered(ctx, message.OfferID); err != nil {
-			return true, err
-		}
-	}
-	if err := s.repo.FinishMessage(ctx, message.ID); err != nil {
-		return true, err
-	}
-	s.logger.DebugContext(ctx, "outbox message delivered", "message_ref", observability.Ref(message.ID))
-	return true, nil
 }
 
 func backoff(attempt int) time.Duration {
