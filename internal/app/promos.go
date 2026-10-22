@@ -42,7 +42,11 @@ func (s *Service) issuePromo(ctx context.Context, tx Tx, execution *executionCon
 	}
 	if code == nil {
 		reply.Buttons = []domain.Button{{Text: "Участвовать в розыгрыше", Payload: "participate"}}
-		return domain.UserFail(domain.CodesExhausted, "Partner promo code pool is exhausted.", "Промокоды партнёра закончились. Вы всё ещё можете подписаться и участвовать в розыгрыше.")
+		return domain.UserFail(
+			domain.CodesExhausted,
+			"Partner promo code pool is exhausted.",
+			"Промокоды партнёра закончились. Вы всё ещё можете подписаться и участвовать в розыгрыше.",
+		)
 	}
 	active, err := tx.Activities(ctx, campaign.ID, cmd.UserID)
 	if err != nil {

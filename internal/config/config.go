@@ -121,7 +121,10 @@ func (c Config) Validate() error {
 
 func validSimulatorURL(raw string) bool {
 	u, err := url.Parse(raw)
-	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Hostname() != "" && u.Opaque == "" && u.User == nil && !strings.Contains(raw, "#") && u.RawQuery == "" && !u.ForceQuery
+	return err == nil &&
+		(u.Scheme == "https" || u.Scheme == "http") &&
+		u.Hostname() != "" && u.Opaque == "" && u.User == nil &&
+		!strings.Contains(raw, "#") && u.RawQuery == "" && !u.ForceQuery
 }
 
 func validImageURL(raw string) bool {
