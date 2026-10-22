@@ -22,6 +22,20 @@ func (e configurationError) LogAttrs() []slog.Attr {
 	}
 }
 
+type messageValidationError string
+
+func (e messageValidationError) Error() string {
+	return "invalid MAX message: " + string(e)
+}
+
+func (messageValidationError) Temporary() bool { return false }
+
+func (messageValidationError) Uncertain() bool { return false }
+
+func (messageValidationError) LogAttrs() []slog.Attr {
+	return []slog.Attr{slog.String("error_code", "invalid_max_message")}
+}
+
 // Error carries safe metadata only. The response body can contain personal data
 // and is deliberately excluded from errors and logs.
 type Error struct {

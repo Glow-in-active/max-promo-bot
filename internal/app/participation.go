@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"promo/internal/domain"
 )
@@ -20,7 +18,7 @@ func (s *Service) showParticipation(ctx context.Context, tx Tx, execution *execu
 	if err := day.CanAct(execution.now); err != nil {
 		return err
 	}
-	reply.Text = "Чтобы участвовать в розыгрыше от «" + day.Partner + "», подпишитесь на канал партнёра и вернитесь проверить подписку."
+	reply.Text = domain.ParticipationText(day)
 	reply.Buttons = subscriptionButtons(day)
 	return nil
 }
@@ -35,7 +33,7 @@ func (s *Service) registerParticipation(ctx context.Context, tx Tx, execution *e
 		return err
 	}
 	if exists {
-		reply.Text = "Вы уже участвуете в сегодняшнем розыгрыше ✅"
+		reply.Text = domain.RegistrationExists
 		return s.chances(ctx, tx, campaign, cmd.UserID, reply)
 	}
 	execution.now = s.Now()
@@ -75,12 +73,15 @@ func (s *Service) registerParticipation(ctx context.Context, tx Tx, execution *e
 			return err
 		}
 	}
-	reply.Text = "Вы в лайнапе ✅ Заявка зарегистрирована. Возвращайтесь завтра к новому партнёру."
+	reply.Text = domain.RegistrationConfirmed
 	return s.chances(ctx, tx, campaign, cmd.UserID, reply)
 }
 
 func subscriptionButtons(day domain.Day) []domain.Button {
-	return []domain.Button{{Text: "Подписаться на " + day.Partner, URL: day.PartnerURL}, {Text: "Проверить подписку", Payload: "check"}}
+	return []domain.Button{
+		{Text: "Подписаться на канал", URL: day.PartnerURL},
+		{Text: "Проверить подписку", Payload: "check"},
+	}
 }
 
 func (s *Service) chances(ctx context.Context, tx Tx, c domain.Campaign, user int64, reply *domain.Message) error {
@@ -98,18 +99,7 @@ func (s *Service) chances(ctx context.Context, tx Tx, c domain.Campaign, user in
 			remaining++
 		}
 	}
-	var visited []string
-	for _, a := range active {
-		visited = append(visited, fmt.Sprintf("день %d: %s", a.DayNumber, a.Partner))
-	}
-	if reply.Text != "" {
-		reply.Text += "\n\n"
-	}
-	reply.Text += fmt.Sprintf(
-		"Ваш фестивальный пропуск\nНакоплено шансов: %d из 10\n"+
-			"Пройденные дни: %s\nОсталось дней: %d\nГлавный приз: %s",
-		len(active), strings.Join(visited, ", "), remaining, c.MainPrize,
-	)
+	reply.Text = domain.ChancesText(c, active, remaining, reply.Text)
 	reply.Buttons = menu()
 	return nil
 }

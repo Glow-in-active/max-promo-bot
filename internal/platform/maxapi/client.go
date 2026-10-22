@@ -94,13 +94,16 @@ type attachment struct {
 }
 
 type button struct {
-	Type    string `json:"type"`
-	Text    string `json:"text"`
-	Payload string `json:"payload,omitempty"`
-	URL     string `json:"url,omitempty"`
+	Type    string  `json:"type"`
+	Text    string  `json:"text"`
+	Payload *string `json:"payload,omitempty"`
+	URL     string  `json:"url,omitempty"`
 }
 
 func (c *Client) Send(ctx context.Context, message domain.Message) error {
+	if err := validateMessage(message); err != nil {
+		return err
+	}
 	body := struct {
 		Text        string       `json:"text"`
 		Attachments []attachment `json:"attachments,omitempty"`
@@ -115,10 +118,10 @@ func (c *Client) Send(ctx context.Context, message domain.Message) error {
 	if len(message.Buttons) > 0 {
 		rows := make([][]button, 0, len(message.Buttons))
 		for _, item := range message.Buttons {
-			b := button{Type: "callback", Text: item.Text, Payload: item.Payload}
+			b := button{Type: "callback", Text: item.Text, Payload: &item.Payload}
 			if item.URL != "" {
 				b.Type = "link"
-				b.Payload = ""
+				b.Payload = nil
 				b.URL = item.URL
 			}
 			rows = append(rows, []button{b})

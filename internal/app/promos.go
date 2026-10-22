@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"promo/internal/domain"
 )
@@ -20,7 +19,7 @@ func (s *Service) issuePromo(ctx context.Context, tx Tx, execution *executionCon
 		return err
 	}
 	if assigned != nil {
-		reply.Text = promoText(*assigned, day)
+		reply.Text = domain.PromoText(*assigned, day)
 		return nil
 	}
 	if err := campaign.CanAct(s.Now()); err != nil {
@@ -64,11 +63,7 @@ func (s *Service) issuePromo(ctx context.Context, tx Tx, execution *executionCon
 			return err
 		}
 	}
-	reply.Text = promoText(*code, day)
+	reply.Text = domain.PromoText(*code, day)
 	reply.Buttons = []domain.Button{{Text: "Участвовать в розыгрыше", Payload: "participate"}, {Text: "Мои шансы", Payload: "chances"}}
 	return nil
-}
-
-func promoText(p domain.Promo, day domain.Day) string {
-	return fmt.Sprintf("Ваш бонус от «%s» готов 🎁\nПромокод: %s\n%s\nТеперь можно участвовать в розыгрыше призов дня.", day.Partner, p.Value, day.Instruction)
 }

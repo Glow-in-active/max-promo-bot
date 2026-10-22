@@ -39,5 +39,8 @@ func ValidateSetup(s Setup) error {
 		return err
 	}
 
-	return validateSetupPromos(s.Promos, dayIDs)
+	if err := validateSetupPromos(s.Promos, dayIDs); err != nil {
+		return err
+	}
+	return validateSetupMessages(s)
 }

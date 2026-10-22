@@ -10,7 +10,7 @@
 | `internal/config` | Настройки окружения и их проверка |
 | `internal/transport/httpapi` | HTTP, события MAX, авторизация и проверка контракта |
 | `internal/app` | Сценарии, транзакции и фоновые обработчики |
-| `internal/domain` | Правила, состояния и выбор победителей |
+| `internal/domain` | Правила, состояния, тексты сообщений и выбор победителей |
 | `internal/storage/postgres` | SQL, блокировки, миграции, inbox и outbox |
 | `internal/platform` | Адаптеры MAX и demo |
 

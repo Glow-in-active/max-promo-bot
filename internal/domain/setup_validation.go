@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 func validateCampaignSetup(c Campaign) (*time.Location, error) {
@@ -94,6 +95,9 @@ func validateSetupDays(s Setup, drawIDs map[string]Draw, location *time.Location
 			partnerURL.Hostname() == "" ||
 			partnerURL.User != nil {
 			return nil, Fail(Invalid, "Partner link must be an absolute HTTPS URL without credentials.")
+		}
+		if utf8.RuneCountInString(d.PartnerURL) > ButtonURLLimit {
+			return nil, Fail(Invalid, "Partner link exceeds the MAX limit of 2048 characters.")
 		}
 		for _, other := range s.Days {
 			if d.ID != other.ID && d.StartsAt.Before(other.EndsAt) && other.StartsAt.Before(d.EndsAt) {
