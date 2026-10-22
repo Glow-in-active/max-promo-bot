@@ -18,6 +18,7 @@ import (
 	"promo/internal/domain"
 	"promo/internal/platform/demo"
 	"promo/internal/storage/postgres"
+	"promo/internal/testdb"
 )
 
 type testClock struct {
@@ -77,6 +78,7 @@ func setupAt(t *testing.T, scenario string, now time.Time) *harness {
 		admin.Close(ctx)
 	})
 	must(t, store.Migrate(ctx))
+	must(t, testdb.IsolateDemoUsers(ctx, admin, schema))
 	clock := &testClock{now: now}
 	run, err := store.CreateDemo(ctx, scenario, clock.Now())
 	must(t, err)
@@ -125,6 +127,23 @@ func concurrently(t *testing.T, n int, fn func(int) error) {
 	}
 	close(start)
 	wg.Wait()
+}
+
+func TestIndependentFixturesDoNotShareRecipientLocks(t *testing.T) {
+	first := setup(t, "standard")
+	second := setup(t, "standard")
+	ctx := context.Background()
+	lock, err := first.observer.Begin(ctx)
+	must(t, err)
+	defer lock.Rollback(ctx)
+	_, err = lock.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended('promo.outbox:' || $1::bigint::text, 0))", first.run.UserIDs[0])
+	must(t, err)
+	second.execute(t, second.command("start"))
+	message, err := second.store.TakeMessage(ctx, second.clock.Now())
+	must(t, err)
+	if message == nil || message.UserID != second.run.UserIDs[0] {
+		t.Fatalf("another fixture's recipient lock blocked delivery: %+v", message)
+	}
 }
 
 func TestApplicationConcurrentPromoAndRegistrationGrantOneChance(t *testing.T) {

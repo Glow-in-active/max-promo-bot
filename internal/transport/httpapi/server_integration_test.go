@@ -18,6 +18,7 @@ import (
 	"promo/internal/domain"
 	"promo/internal/platform/demo"
 	"promo/internal/storage/postgres"
+	"promo/internal/testdb"
 	"promo/internal/transport/httpapi/generated"
 )
 
@@ -56,6 +57,9 @@ func postgresHTTPTestStore(t *testing.T) (*postgres.Store, *pgx.Conn) {
 		_ = admin.Close(ctx)
 	})
 	if err = repo.Migrate(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err = testdb.IsolateDemoUsers(ctx, admin, schema); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = admin.Exec(ctx, "SET search_path TO "+pgx.Identifier{schema}.Sanitize()); err != nil {

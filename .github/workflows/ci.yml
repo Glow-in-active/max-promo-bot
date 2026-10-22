@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  go:
+    name: Go and PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TEST_DATABASE_URL: postgres://promo_test:localtest-db-password@127.0.0.1:5432/promo_test?sslmode=disable
+    services:
+      postgres:
+        image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+        env:
+          POSTGRES_DB: promo_test
+          POSTGRES_USER: promo_test
+          POSTGRES_PASSWORD: localtest-db-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U promo_test -d promo_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.26.1'
+          cache: true
+      - name: Verify service and build binary
+        run: |
+          mkdir -p reports
+          make verify-local build 2>&1 | tee reports/verification.log
+      - name: Save verification reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: go-verification
+          path: reports/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  runtime:
+    name: Runtime and Postman
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - name: Install Postman CLI
+        run: |
+          npm install --prefix "$RUNNER_TEMP/postman" --ignore-scripts --no-audit --no-fund postman-cli@1.75.0
+          postman_cli="$RUNNER_TEMP/postman/node_modules/.bin/postman"
+          "$postman_cli" --version
+          echo "POSTMAN_CLI=$postman_cli" >> "$GITHUB_ENV"
+      - name: Verify runtime container and API collection
+        run: |
+          mkdir -p reports
+          make smoke 2>&1 | tee reports/runtime-smoke.log
+      - name: Save runtime report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: runtime-smoke
+          path: reports/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  simulator:
+    name: Simulator and documentation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify simulator and documentation
+        run: |
+          mkdir -p reports
+          make simulator-check docs-check 2>&1 | tee reports/simulator.log
+      - name: Collect simulator logs
+        if: always()
+        run: |
+          mkdir -p reports
+          if [[ -f dev/max-simulator/compose.yaml ]]; then
+            docker compose --env-file .env.example -f dev/max-simulator/compose.yaml logs --no-color > reports/simulator-compose.log 2>&1
+          fi
+      - name: Stop simulator
+        if: always()
+        run: |
+          if [[ -f dev/max-simulator/compose.yaml ]]; then
+            docker compose --env-file .env.example -f dev/max-simulator/compose.yaml down --volumes --remove-orphans
+          fi
+      - name: Save simulator reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: simulator-and-docs
+          path: reports/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  ci:
+    name: CI
+    if: always()
+    needs: [go, runtime, simulator]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require all checks to pass
+        env:
+          GO_RESULT: ${{ needs.go.result }}
+          RUNTIME_RESULT: ${{ needs.runtime.result }}
+          SIMULATOR_RESULT: ${{ needs.simulator.result }}
+        run: |
+          printf '%s\n' "Go: $GO_RESULT" "Runtime: $RUNTIME_RESULT" "Simulator: $SIMULATOR_RESULT"
+          [[ "$GO_RESULT" == success && "$RUNTIME_RESULT" == success && "$SIMULATOR_RESULT" == success ]]

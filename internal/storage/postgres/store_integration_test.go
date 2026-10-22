@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"promo/internal/app"
 	"promo/internal/domain"
+	"promo/internal/testdb"
 )
 
 func testStore(t *testing.T) *Store {
@@ -60,6 +61,7 @@ func testStore(t *testing.T) *Store {
 	if err = store.Migrate(ctx); err != nil {
 		t.Fatal(err)
 	}
+	requireNoError(t, testdb.IsolateDemoUsers(ctx, admin, schema))
 	return store
 }
 
