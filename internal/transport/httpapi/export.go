@@ -105,6 +105,16 @@ func (r exportRecord) cells() []string {
 	if r.position > 0 {
 		position = strconv.Itoa(r.position)
 	}
+	offer := domain.Offer{}
+	if r.offer != nil {
+		offer = *r.offer
+	}
+	var consent, name string
+	if offer.Status == "claimed" {
+		consent = csvTime(offer.ConsentAt)
+		name = offer.Name
+	}
+
 	values := []string{
 		r.kind,
 		r.draw.ID,
@@ -115,18 +125,17 @@ func (r exportRecord) cells() []string {
 		strconv.FormatInt(r.userID, 10),
 		strconv.Itoa(r.weight),
 		r.draw.Prize,
-		"", "", "", "",
+		offer.SlotID,
+		offer.ID,
+		offer.Status,
+		offer.DeliveryState,
 		csvTime(r.draw.DrawnAt),
 		csvTime(r.draw.ApprovedAt),
-		"", "", "", "", "",
-	}
-	if r.offer != nil {
-		offer := r.offer
-		values[9], values[10], values[11], values[12] = offer.SlotID, offer.ID, offer.Status, offer.DeliveryState
-		values[15], values[16], values[17] = csvTime(offer.SentAt), csvTime(offer.Deadline), csvTime(offer.ClaimedAt)
-		if offer.Status == "claimed" {
-			values[18], values[19] = csvTime(offer.ConsentAt), offer.Name
-		}
+		csvTime(offer.SentAt),
+		csvTime(offer.Deadline),
+		csvTime(offer.ClaimedAt),
+		consent,
+		name,
 	}
 	for i, value := range values {
 		values[i] = csvCell(value)
