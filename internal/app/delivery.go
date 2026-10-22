@@ -114,7 +114,11 @@ func (s *Service) RetryDelivery(ctx context.Context, offerID, actor string) erro
 			return err
 		}
 		if o.Status != "pending" {
-			return domain.UserFail(domain.InvalidTransition, "Delivery retry is allowed only before delivery confirmation.", "Повторная отправка разрешена только до подтверждения доставки.")
+			return domain.UserFail(
+				domain.InvalidTransition,
+				"Delivery retry is allowed only before delivery confirmation.",
+				"Повторная отправка разрешена только до подтверждения доставки.",
+			)
 		}
 		now := s.Now()
 		if err := tx.RetryOfferMessage(ctx, offerID, now); err != nil {

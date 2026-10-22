@@ -53,7 +53,11 @@ func (s *Service) registerParticipation(ctx context.Context, tx Tx, execution *e
 		return domain.UserFail(domain.SubscriptionUnavailable, "Subscription check is temporarily unavailable.", "Не удалось проверить подписку. Попробуйте ещё раз чуть позже.")
 	}
 	if execution.subscription != SubscriptionYes {
-		return domain.UserFail(domain.NotSubscribed, "Participant is not subscribed to the partner channel.", "Пока не вижу подписку. Подпишитесь на канал партнёра и проверьте ещё раз.")
+		return domain.UserFail(
+			domain.NotSubscribed,
+			"Participant is not subscribed to the partner channel.",
+			"Пока не вижу подписку. Подпишитесь на канал партнёра и проверьте ещё раз.",
+		)
 	}
 	active, err := tx.Activities(ctx, campaign.ID, cmd.UserID)
 	if err != nil {
@@ -101,7 +105,11 @@ func (s *Service) chances(ctx context.Context, tx Tx, c domain.Campaign, user in
 	if reply.Text != "" {
 		reply.Text += "\n\n"
 	}
-	reply.Text += fmt.Sprintf("Ваш фестивальный пропуск\nНакоплено шансов: %d из 10\nПройденные дни: %s\nОсталось дней: %d\nГлавный приз: %s", len(active), strings.Join(visited, ", "), remaining, c.MainPrize)
+	reply.Text += fmt.Sprintf(
+		"Ваш фестивальный пропуск\nНакоплено шансов: %d из 10\n"+
+			"Пройденные дни: %s\nОсталось дней: %d\nГлавный приз: %s",
+		len(active), strings.Join(visited, ", "), remaining, c.MainPrize,
+	)
 	reply.Buttons = menu()
 	return nil
 }
