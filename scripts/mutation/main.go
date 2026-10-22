@@ -53,11 +53,11 @@ var domainMutations = []mutation{
 	{ID: "positive-weight", File: "internal/domain/random.go", Function: "Select", Original: "c.Weight < 1", Changed: "c.Weight < 0", Package: "./internal/domain", Tests: "."},
 	{ID: "random-upper-bound", File: "internal/domain/random.go", Function: "Select", Original: "pick >= total", Changed: "pick > total", Package: "./internal/domain", Tests: "."},
 	{ID: "weighted-boundary", File: "internal/domain/random.go", Function: "Select", Original: "pick < int64(c.Weight)", Changed: "pick <= int64(c.Weight)", Package: "./internal/domain", Tests: "."},
-	{ID: "final-reserve-required", File: "internal/domain/setup.go", Function: "ValidateSetup", Original: "final.ReserveCount < 1", Changed: "false", Package: "./internal/domain", Tests: "."},
-	{ID: "explicit-timezone", File: "internal/domain/setup.go", Function: "ValidateSetup", Original: "c.Timezone == \"\"", Changed: "false", Package: "./internal/domain", Tests: "."},
-	{ID: "host-timezone", File: "internal/domain/setup.go", Function: "ValidateSetup", Original: "c.Timezone == \"Local\"", Changed: "false", Package: "./internal/domain", Tests: "."},
-	{ID: "calendar-date-unique", File: "internal/domain/setup.go", Function: "ValidateSetup", Original: "dayDates[date]", Changed: "false", Package: "./internal/domain", Tests: "."},
-	{ID: "calendar-midnight-boundary", File: "internal/domain/setup.go", Function: "ValidateSetup", Original: "d.EndsAt.After(nextDate)", Changed: "d.EndsAt.After(nextDate) && false", Package: "./internal/domain", Tests: "."},
+	{ID: "final-reserve-required", File: "internal/domain/setup_validation.go", Function: "validateSetupDraws", Original: "final.ReserveCount < 1", Changed: "false", Package: "./internal/domain", Tests: "."},
+	{ID: "explicit-timezone", File: "internal/domain/setup_validation.go", Function: "validateCampaignSetup", Original: "c.Timezone == \"\"", Changed: "false", Package: "./internal/domain", Tests: "."},
+	{ID: "host-timezone", File: "internal/domain/setup_validation.go", Function: "validateCampaignSetup", Original: "c.Timezone == \"Local\"", Changed: "false", Package: "./internal/domain", Tests: "."},
+	{ID: "calendar-date-unique", File: "internal/domain/setup_validation.go", Function: "validateDayCalendar", Original: "dayDates[date]", Changed: "false", Package: "./internal/domain", Tests: "."},
+	{ID: "calendar-midnight-boundary", File: "internal/domain/setup_validation.go", Function: "validateDayCalendar", Original: "d.EndsAt.After(nextDate)", Changed: "d.EndsAt.After(nextDate) && false", Package: "./internal/domain", Tests: "."},
 }
 
 var integrationMutations = []mutation{
