@@ -16,7 +16,15 @@ func (t *transaction) Enqueue(ctx context.Context, m domain.Message, dedupKey st
 	if err != nil {
 		return err
 	}
-	_, err = t.tx.Exec(ctx, `INSERT INTO outbox(id,campaign_id,user_id,text,buttons,offer_id,banner,next_attempt_at,created_at,dedup_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8,$9) ON CONFLICT(dedup_key) DO NOTHING`, m.ID, m.CampaignID, m.UserID, m.Text, buttons, nullable(m.OfferID), m.Banner, now, dedupKey)
+	_, err = t.tx.Exec(ctx, `
+		INSERT INTO outbox(
+			id, campaign_id, user_id, text, buttons, offer_id, banner, next_attempt_at, created_at, dedup_key
+		)
+		VALUES($1, $2, $3, $4, $5, $6, $7, $8, $8, $9)
+		ON CONFLICT(dedup_key) DO NOTHING`,
+		m.ID, m.CampaignID, m.UserID, m.Text, buttons,
+		nullable(m.OfferID), m.Banner, now, dedupKey,
+	)
 	return err
 }
 
@@ -29,7 +37,10 @@ func (s *Store) PutInbox(ctx context.Context, c domain.Command, key string) (boo
 	if id == "" {
 		id = newID()
 	}
-	tag, err := s.pool.Exec(ctx, `INSERT INTO inbox(id,dedup_key,command) VALUES($1,$2,$3) ON CONFLICT(dedup_key) DO NOTHING`, id, key, payload)
+	tag, err := s.pool.Exec(ctx, `
+		INSERT INTO inbox(id, dedup_key, command)
+		VALUES($1, $2, $3)
+		ON CONFLICT(dedup_key) DO NOTHING`, id, key, payload)
 	return tag.RowsAffected() > 0, err
 }
 
@@ -52,17 +63,19 @@ func (t *transaction) CompleteInbox(ctx context.Context, id string) error {
 func (s *Store) TakeInbox(ctx context.Context, now time.Time) (*domain.Event, error) {
 	var event domain.Event
 	var payload []byte
-	err := s.pool.QueryRow(ctx, `WITH ready AS (
- SELECT id FROM inbox
- WHERE (state IN ('pending','retry') AND next_attempt_at <= $1)
-    OR (state = 'processing' AND lease_until <= $1)
- ORDER BY seq LIMIT 1 FOR UPDATE SKIP LOCKED
-)
-UPDATE inbox
-SET state = 'processing', attempts = attempts + 1,
-    lease_until = $1 + interval '30 seconds'
-FROM ready WHERE inbox.id = ready.id
-RETURNING inbox.id, inbox.command, inbox.attempts`, now).Scan(&event.ID, &payload, &event.Attempts)
+	err := s.pool.QueryRow(ctx, `
+		WITH ready AS (
+			SELECT id FROM inbox
+			WHERE (state IN ('pending', 'retry') AND next_attempt_at <= $1)
+			   OR (state = 'processing' AND lease_until <= $1)
+			ORDER BY seq LIMIT 1 FOR UPDATE SKIP LOCKED
+		)
+		UPDATE inbox
+		SET state = 'processing', attempts = attempts + 1,
+		    lease_until = $1 + interval '30 seconds'
+		FROM ready WHERE inbox.id = ready.id
+		RETURNING inbox.id, inbox.command, inbox.attempts`, now,
+	).Scan(&event.ID, &payload, &event.Attempts)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -81,16 +94,22 @@ func (s *Store) RetryInbox(ctx context.Context, id, reason string, next time.Tim
 	if terminal {
 		state = "failed"
 	}
-	tag, err := s.pool.Exec(ctx, "UPDATE inbox SET state=$2,next_attempt_at=$3,lease_until=NULL,last_error=$4 WHERE id=$1 AND state<>'done'", id, state, next, reason)
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE inbox
+		SET state=$2, next_attempt_at=$3, lease_until=NULL, last_error=$4
+		WHERE id=$1 AND state<>'done'`, id, state, next, reason)
 	return changed(tag, err, "Event")
 }
 
-const messageFields = `id,campaign_id,user_id,text,buttons,COALESCE(offer_id,''),banner,state,attempts`
+const messageFields = `id, campaign_id, user_id, text, buttons, COALESCE(offer_id, ''), banner, state, attempts`
 
 func scanMessage(row scanner) (domain.Message, error) {
 	var m domain.Message
 	var buttons []byte
-	err := row.Scan(&m.ID, &m.CampaignID, &m.UserID, &m.Text, &buttons, &m.OfferID, &m.Banner, &m.State, &m.Attempts)
+	err := row.Scan(
+		&m.ID, &m.CampaignID, &m.UserID, &m.Text, &buttons,
+		&m.OfferID, &m.Banner, &m.State, &m.Attempts,
+	)
 	if err != nil {
 		return m, err
 	}
@@ -100,18 +119,19 @@ func scanMessage(row scanner) (domain.Message, error) {
 
 const recipientLockKey = `hashtextextended('promo.outbox:' || $1::bigint::text, 0)`
 
-const eligibleMessage = `((candidate.state IN ('pending','retry') AND candidate.next_attempt_at <= $1)
-    OR (candidate.state = 'processing' AND candidate.lease_until <= $1))
-   AND NOT EXISTS (
-     SELECT 1 FROM outbox AS earlier
-     WHERE earlier.user_id = candidate.user_id AND earlier.seq < candidate.seq
-       AND earlier.state IN ('pending','retry','processing')
-   )
-   AND NOT EXISTS (
-     SELECT 1 FROM outbox AS active
-     WHERE active.user_id = candidate.user_id AND active.id <> candidate.id
-       AND active.state = 'processing' AND active.lease_until > $1
-   )`
+const eligibleMessage = `
+	((candidate.state IN ('pending', 'retry') AND candidate.next_attempt_at <= $1)
+	 OR (candidate.state = 'processing' AND candidate.lease_until <= $1))
+	AND NOT EXISTS (
+		SELECT 1 FROM outbox AS earlier
+		WHERE earlier.user_id = candidate.user_id AND earlier.seq < candidate.seq
+		  AND earlier.state IN ('pending', 'retry', 'processing')
+	)
+	AND NOT EXISTS (
+		SELECT 1 FROM outbox AS active
+		WHERE active.user_id = candidate.user_id AND active.id <> candidate.id
+		  AND active.state = 'processing' AND active.lease_until > $1
+	)`
 
 func (s *Store) TakeMessage(ctx context.Context, now time.Time) (*domain.Message, error) {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
@@ -119,8 +139,10 @@ func (s *Store) TakeMessage(ctx context.Context, now time.Time) (*domain.Message
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
-	rows, err := tx.Query(ctx, `SELECT candidate.user_id FROM outbox AS candidate
- WHERE `+eligibleMessage+` ORDER BY candidate.seq LIMIT 32`, now)
+	rows, err := tx.Query(ctx, `
+		SELECT candidate.user_id FROM outbox AS candidate
+		WHERE `+eligibleMessage+`
+		ORDER BY candidate.seq LIMIT 32`, now)
 	if err != nil {
 		return nil, err
 	}
@@ -130,24 +152,28 @@ func (s *Store) TakeMessage(ctx context.Context, now time.Time) (*domain.Message
 	}
 	for _, user := range users {
 		var locked bool
-		if err := tx.QueryRow(ctx, "SELECT pg_try_advisory_xact_lock("+recipientLockKey+")", user).Scan(&locked); err != nil {
+		if err := tx.QueryRow(ctx,
+			"SELECT pg_try_advisory_xact_lock("+recipientLockKey+")", user,
+		).Scan(&locked); err != nil {
 			return nil, err
 		}
 		if !locked {
 			continue
 		}
-		message, err := scanMessage(tx.QueryRow(ctx, `WITH ready AS (
- SELECT candidate.id FROM outbox AS candidate
- WHERE candidate.user_id = $2 AND `+eligibleMessage+`
- ORDER BY candidate.seq LIMIT 1 FOR UPDATE OF candidate SKIP LOCKED
-)
-UPDATE outbox
-SET state = 'processing', attempts = attempts + 1,
-    lease_until = $1 + interval '30 seconds'
-FROM ready WHERE outbox.id = ready.id
-RETURNING outbox.id, outbox.campaign_id, outbox.user_id, outbox.text,
-          outbox.buttons, COALESCE(outbox.offer_id,''), outbox.banner,
-          outbox.state, outbox.attempts`, now, user))
+		message, err := scanMessage(tx.QueryRow(ctx, `
+			WITH ready AS (
+				SELECT candidate.id FROM outbox AS candidate
+				WHERE candidate.user_id = $2 AND `+eligibleMessage+`
+				ORDER BY candidate.seq LIMIT 1 FOR UPDATE OF candidate SKIP LOCKED
+			)
+			UPDATE outbox
+			SET state = 'processing', attempts = attempts + 1,
+			    lease_until = $1 + interval '30 seconds'
+			FROM ready WHERE outbox.id = ready.id
+			RETURNING outbox.id, outbox.campaign_id, outbox.user_id, outbox.text,
+			          outbox.buttons, COALESCE(outbox.offer_id, ''), outbox.banner,
+			          outbox.state, outbox.attempts`, now, user,
+		))
 		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}
@@ -172,7 +198,10 @@ func (s *Store) RetryMessage(ctx context.Context, id, reason string, next time.T
 	if terminal {
 		state = "failed"
 	}
-	tag, err := s.pool.Exec(ctx, "UPDATE outbox SET state=$2,next_attempt_at=$3,lease_until=NULL,last_error=$4 WHERE id=$1 AND state<>'delivered'", id, state, next, reason)
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE outbox
+		SET state=$2, next_attempt_at=$3, lease_until=NULL, last_error=$4
+		WHERE id=$1 AND state<>'delivered'`, id, state, next, reason)
 	return changed(tag, err, "Message")
 }
 
@@ -180,11 +209,16 @@ func (s *Store) RetryMessage(ctx context.Context, id, reason string, next time.T
 func (s *Store) Messages(ctx context.Context, campaign, cursor string) ([]domain.Message, error) {
 	after := int64(0)
 	if cursor != "" {
-		if err := s.pool.QueryRow(ctx, "SELECT seq FROM outbox WHERE id=$1 AND campaign_id=$2", cursor, campaign).Scan(&after); err != nil {
+		if err := s.pool.QueryRow(ctx,
+			"SELECT seq FROM outbox WHERE id=$1 AND campaign_id=$2", cursor, campaign,
+		).Scan(&after); err != nil {
 			return nil, missing(err, "Message cursor")
 		}
 	}
-	rows, err := s.pool.Query(ctx, "SELECT "+messageFields+" FROM outbox WHERE campaign_id=$1 AND seq>$2 ORDER BY seq LIMIT 200", campaign, after)
+	rows, err := s.pool.Query(ctx, "SELECT "+messageFields+`
+		FROM outbox
+		WHERE campaign_id=$1 AND seq>$2
+		ORDER BY seq LIMIT 200`, campaign, after)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +246,10 @@ func (t *transaction) RetryOfferMessage(ctx context.Context, offer string, now t
 	if _, err := t.tx.Exec(ctx, "SELECT pg_advisory_xact_lock("+recipientLockKey+")", user); err != nil {
 		return err
 	}
-	tag, err := t.tx.Exec(ctx, `UPDATE outbox SET state='pending',attempts=0,next_attempt_at=$2,lease_until=NULL,last_error='' WHERE offer_id=$1 AND state='failed'`, offer, now)
+	tag, err := t.tx.Exec(ctx, `
+		UPDATE outbox
+		SET state='pending', attempts=0, next_attempt_at=$2, lease_until=NULL, last_error=''
+		WHERE offer_id=$1 AND state='failed'`, offer, now)
 	if err != nil {
 		return err
 	}
