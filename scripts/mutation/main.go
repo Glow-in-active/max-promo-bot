@@ -61,8 +61,8 @@ var domainMutations = []mutation{
 }
 
 var integrationMutations = []mutation{
-	{ID: "callback-source-day", File: "internal/app/service.go", Function: "Execute", Original: "tx.DayAt(ctx, campaign.ID, cmd.OccurredAt)", Changed: "tx.DayAt(ctx, campaign.ID, s.Now())", Package: "./internal/app", Tests: "^TestReplayedCallbackRemainsBoundToItsOriginalDay$"},
-	{ID: "subscription-source-day", File: "internal/app/service.go", Function: "Execute", Original: "s.repo.CurrentDay(ctx, cmd.CampaignID, cmd.OccurredAt)", Changed: "s.repo.CurrentDay(ctx, cmd.CampaignID, s.Now())", Package: "./internal/app", Tests: "^TestQueuedSubscriptionCheckCannotSwitchPartnersAfterMidnight$"},
+	{ID: "callback-source-day", File: "internal/app/execution.go", Function: "loadPartnerDay", Original: "tx.DayAt(ctx, campaign.ID, cmd.OccurredAt)", Changed: "tx.DayAt(ctx, campaign.ID, execution.now)", Package: "./internal/app", Tests: "^TestReplayedCallbackRemainsBoundToItsOriginalDay$"},
+	{ID: "subscription-source-day", File: "internal/app/execution.go", Function: "checkSubscription", Original: "s.repo.CurrentDay(ctx, cmd.CampaignID, cmd.OccurredAt)", Changed: "s.repo.CurrentDay(ctx, cmd.CampaignID, s.Now())", Package: "./internal/app", Tests: "^TestQueuedSubscriptionCheckCannotSwitchPartnersAfterMidnight$"},
 	{ID: "provider-retry-after", File: "internal/app/workers.go", Function: "processNextMessage", Original: "max(delay, provider.RetryDelay())", Changed: "max(delay, 0)", Package: "./internal/app", Tests: "^TestApplicationProviderRetryAfterControlsDurableOutbox$"},
 	{ID: "partner-stock-grouping", File: "internal/storage/postgres/stats.go", Function: "partnerPromoStock", Original: "!exists", Changed: "!exists || exists", Package: "./internal/transport/httpapi", Tests: "^TestStatsAPIReportsRepeatedPartnerNameAndTotal$"},
 	{ID: "membership-required-e2e", File: "internal/app/participation.go", Function: "registerParticipation", Original: "execution.subscription != SubscriptionYes", Changed: "false", Package: "./internal/app", Tests: "^TestMAXEndToEndCampaignLifecycle$"},
