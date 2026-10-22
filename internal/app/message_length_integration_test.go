@@ -66,7 +66,7 @@ func assertPrizeRejectedBeforeMAX(t *testing.T, h *harness, legacyButtons []doma
 		_, err = h.observer.Exec(ctx, query, offer.ID, data)
 		must(t, err)
 	}
-	stop := startTimeoutWorkers(t, h)
+	stop := startTestWorkers(t, h)
 	awaitWorkerProgress(t, "invalid message rejection", func() bool {
 		messages, err := h.store.Messages(ctx, h.run.CampaignID, "")
 		must(t, err)

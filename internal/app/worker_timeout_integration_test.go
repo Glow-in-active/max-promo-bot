@@ -24,11 +24,14 @@ func timeoutHarness(t *testing.T, scenario string) *harness {
 	return h
 }
 
-func startTimeoutWorkers(t *testing.T, h *harness) func() {
+func startTestWorkers(t *testing.T, h *harness) func() {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
-	go func() { h.service.Work(ctx, slog.New(slog.NewTextHandler(io.Discard, nil))); close(done) }()
+	go func() {
+		h.service.Work(ctx, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		close(done)
+	}()
 	var once sync.Once
 	stop := func() {
 		once.Do(func() {
@@ -83,7 +86,7 @@ func TestInboxTimeoutAllowsAnotherUserAndRecoversTheLease(t *testing.T) {
 		}
 	}
 	release := h.holdLock(t, func(tx app.Tx) error { _, err := tx.UserForUpdate(ctx, blocked.UserID, h.clock.Now()); return err })
-	startTimeoutWorkers(t, h)
+	startTestWorkers(t, h)
 	h.waitForLock(t, "FROM users")
 	awaitWorkerProgress(t, "the independent inbox event while another user is locked", func() bool {
 		state, _, _ := inboxState(t, h, independent.ID)
@@ -136,7 +139,7 @@ func TestOutboxTimeoutAllowsAnotherMessageAndRecoversTheLease(t *testing.T) {
 	}
 	blockedID := messages[0].ID
 	release := h.holdLock(t, func(tx app.Tx) error { return tx.LockSlot(ctx, offer.SlotID) })
-	startTimeoutWorkers(t, h)
+	startTestWorkers(t, h)
 	h.waitForLock(t, "FROM slots")
 	awaitWorkerProgress(t, "the independent reply while the prize slot is locked", func() bool {
 		messages, err = h.store.Messages(ctx, h.run.CampaignID, "")
