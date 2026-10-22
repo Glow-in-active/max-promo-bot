@@ -1,0 +1,68 @@
+site_name: Promo
+site_description: Архитектура, запуск и проверка сервиса промоакции
+site_url: http://127.0.0.1:8000/
+site_dir: /tmp/promo-docs-site
+docs_dir: docs
+use_directory_urls: true
+strict: true
+
+hooks:
+  - scripts/docs_hook.py
+
+theme:
+  name: material
+  language: ru
+  font: false
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Тёмная тема
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Светлая тема
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search:
+      lang:
+        - ru
+        - en
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+extra:
+  generator: false
+
+extra_css:
+  - assets/extra.css
+
+nav:
+  - Проверка проекта: index.md
+  - Устройство сервиса: architecture.md
+  - API и Postman: api.md
+  - Тесты: testing.md
+  - Подключение MAX: operations.md
