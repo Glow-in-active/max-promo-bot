@@ -96,7 +96,7 @@ services:
       target: test
     environment:
       TEST_DATABASE_URL: postgres://promo_test:localtest-db-password@postgres-test:5432/promo_test?sslmode=disable
-    command: [go, test, -tags=integration, -race, -count=1, -timeout=120s, ./...]
+    command: [go, run, -tags=tools, ./scripts/testsuite, -tags=integration, -race, -count=1, -timeout=120s, ./...]
     depends_on:
       postgres-test:
         condition: service_healthy
