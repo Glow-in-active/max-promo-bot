@@ -47,7 +47,7 @@ func (s *Service) Execute(ctx context.Context, cmd domain.Command) (domain.Messa
 		return domain.Message{}, err
 	}
 
-	// The remote check precedes the transaction; its answer is not a day/registration lock.
+	// Deadlines are checked again under transaction locks.
 	checkedDay, subscription, err := s.checkSubscription(ctx, cmd)
 	if err != nil {
 		return domain.Message{}, err
