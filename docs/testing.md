@@ -54,7 +54,9 @@ TEST_DATABASE_URL='postgres://promo_test:localtest-db-password@127.0.0.1:5433/pr
   make verify-local
 ```
 
-Команда проверяет форматирование, vet, генерацию API, тесты mutation runner, все интеграционные тесты с race detector и обе группы мутаций. Отсутствие `TEST_DATABASE_URL` считается ошибкой.
+Команда проверяет форматирование, vet, генерацию API, тестовые инструменты, все интеграционные тесты с race detector и обе группы мутаций. Отсутствие `TEST_DATABASE_URL` считается ошибкой.
+
+Команды тестирования в Makefile и Docker проверяют поток `go test -json`. Пропуск теста или подтеста, пустой запуск пакета, ошибка сборки и неполный результат завершают проверку с ошибкой. Пакеты без тестовых файлов допустимы, если в выбранном наборе выполнились тесты.
 
 Мутации временно возвращают 20 доменных и 8 межслойных ошибок через Go overlay. До изменения назначенный тест должен пройти, после изменения должен упасть. Ошибка сборки, пропуск и тайм-аут не засчитываются. Исходники не меняются; отчёты: `reports/mutations.json` и `reports/integration-mutations.json`. Отдельный запуск: `make mutate` и `make mutate-integration`.
 
@@ -62,7 +64,7 @@ TEST_DATABASE_URL='postgres://promo_test:localtest-db-password@127.0.0.1:5433/pr
 
 ```sh
 mkdir -p reports
-go test -tags=integration -race -count=1 -v \
+go run -tags=tools ./scripts/testsuite -tags=integration -race -count=1 -v \
   -run '^TestOutboxDeliversThousandIndependentRecipients$' ./internal/app \
   > reports/outbox-load.log 2>&1
 ```

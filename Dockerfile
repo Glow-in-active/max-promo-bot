@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 
 FROM base AS test
-CMD ["go", "test", "-race", "-count=1", "./..."]
+CMD ["go", "run", "-tags=tools", "./scripts/testsuite", "-race", "-count=1", "./..."]
 
 FROM base AS build
 ARG TARGETOS
